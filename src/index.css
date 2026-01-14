@@ -1,3 +1,30 @@
 body {
   font-family: "Helvetica Neue", Arial, sans-serif;
 }
+
+/* iOS Safari fix — remove blue link color */
+a,
+a:visited,
+a:hover,
+a:active {
+  color: inherit !important;
+  text-decoration: none !important;
+  -webkit-text-fill-color: currentColor;
+}
+
+/* Force iOS Safari to not paint clickable card text blue */
+.gp-card-link,
+.gp-card-link * {
+  color: #111 !important;
+  -webkit-text-fill-color: #111 !important;
+  text-decoration: none !important;
+}
+
+/* If any card uses <a> inside */
+.gp-card-link:visited,
+.gp-card-link:hover,
+.gp-card-link:active {
+  color: #111 !important;
+  -webkit-text-fill-color: #111 !important;
+  text-decoration: none !important;
+}

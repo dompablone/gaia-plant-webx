@@ -959,6 +959,18 @@ function AppDashboard({ session, profile }) {
     { title: "Alertas de uso", emoji: "⚠️", to: "/app/alertas" },
   ];
 
+  const cardButtonStyle = {
+    textAlign: "left",
+    width: "100%",
+    padding: 16,
+    borderRadius: 16,
+    border: "1px solid rgba(0,0,0,0.12)",
+    background: "#fff",
+    cursor: "pointer",
+    color: "#111",
+    fontWeight: 700,
+  };
+
   const hasHealth = profile?.health_triage && Object.keys(normalizeTriage(profile.health_triage)).length > 0;
   const hasEmotional = profile?.emotional_triage && Object.keys(normalizeTriage(profile.emotional_triage)).length > 0;
 
@@ -1007,16 +1019,9 @@ function AppDashboard({ session, profile }) {
             <button
               key={c.to}
               type="button"
+              className="gp-card-link"
               onClick={() => nav(c.to)}
-              style={{
-                textAlign: "left",
-                width: "100%",
-                padding: 16,
-                borderRadius: 16,
-                border: "1px solid rgba(0,0,0,0.12)",
-                background: "#fff",
-                cursor: "pointer",
-              }}
+              style={cardButtonStyle}
             >
               <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                 <div style={{ fontSize: 44, lineHeight: "44px" }}>{c.emoji}</div>
@@ -1037,6 +1042,7 @@ function AppDashboard({ session, profile }) {
             <button
               key={q.to}
               type="button"
+              className="gp-card-link"
               onClick={() => nav(q.to)}
               style={{
                 width: 100,
@@ -1051,6 +1057,7 @@ function AppDashboard({ session, profile }) {
                 gap: 4,
                 cursor: "pointer",
                 boxShadow: "0 6px 16px rgba(127, 176, 105, 0.18)",
+                color: "#2f5d36",
               }}
             >
               <div style={{ fontSize: 28, lineHeight: "28px" }}>{q.emoji}</div>
@@ -3011,9 +3018,10 @@ export default function App() {
     setSigningOut(true);
 
     try {
-      await supabase.auth.signOut();
-    } catch {
-      // ignore
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+    } catch (err) {
+      logWarn("signout_error", { message: String(err?.message || err) });
     } finally {
       fetchSeqRef.current++;
       lastLoadedUserIdRef.current = null;

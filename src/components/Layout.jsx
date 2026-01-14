@@ -1,7 +1,7 @@
 import { Outlet, Link, useNavigate } from "react-router-dom";
 import gaiaLogo from "../assets/gaia-icon.png";
 
-export default function Layout({ onSignOut }) {
+export default function Layout({ onSignOut, signingOut = false }) {
   const nav = useNavigate();
   const iconScale = 1.5;
   const actionButtonStyle = {
@@ -95,12 +95,14 @@ export default function Layout({ onSignOut }) {
             <button
               type="button"
               onClick={onSignOut}
+              disabled={signingOut}
               style={{
                 ...actionButtonStyle,
-                cursor: "pointer",
+                opacity: signingOut ? 0.7 : 1,
+                cursor: signingOut ? "not-allowed" : "pointer",
               }}
             >
-              Sair
+              {signingOut ? "Saindo..." : "Sair"}
             </button>
           </div>
         </nav>
