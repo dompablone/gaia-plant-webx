@@ -3085,19 +3085,14 @@ export default function App() {
       <Route path="/" element={<Navigate to={session?.user ? "/start" : "/auth"} replace />} />
 
       <Route path="/auth" element={session?.user ? <Navigate to="/start" replace /> : <Welcome />} />
-      <Route path="/criar-conta" element={session?.user ? <Navigate to="/start" replace /> : <Signup />} />
       <Route path="/login" element={session?.user ? <Navigate to="/start" replace /> : <Login />} />
+      <Route path="/criar-conta" element={session?.user ? <Navigate to="/start" replace /> : <Signup />} />
 
       <Route
         path="/start"
         element={
           <RequireAuth session={session}>
-            <ProfileGate
-              session={session}
-              profile={profile}
-              loadingProfile={loadingProfile}
-              profileError={profileError}
-            />
+            <ProfileGate session={session} profile={profile} loadingProfile={loadingProfile} profileError={profileError} />
           </RequireAuth>
         }
       />
@@ -3106,7 +3101,7 @@ export default function App() {
         path="/perfil-clinico"
         element={
           <RequireAuth session={session}>
-            <ClinicalProfile session={session} profile={profile} onProfileSaved={setProfile} />
+            <ClinicalProfile session={session} profile={profile} onProfileSaved={(p) => setProfile(p)} />
           </RequireAuth>
         }
       />
@@ -3114,9 +3109,9 @@ export default function App() {
       <Route
         path="/wizard"
         element={
-          <RequireBasicProfile session={session} profile={profile}>
-            <Wizard session={session} profile={profile} onProfileSaved={setProfile} />
-          </RequireBasicProfile>
+          <RequireAuth session={session}>
+            <Wizard session={session} profile={profile} onProfileSaved={(p) => setProfile(p)} />
+          </RequireAuth>
         }
       />
 
@@ -3124,7 +3119,7 @@ export default function App() {
         path="/patologias"
         element={
           <RequireAuth session={session}>
-            <Patologias session={session} profile={profile} onProfileSaved={setProfile} />
+            <Patologias session={session} profile={profile} onProfileSaved={(p) => setProfile(p)} />
           </RequireAuth>
         }
       />
@@ -3133,188 +3128,15 @@ export default function App() {
         path="/app"
         element={
           <RequireAuth session={session}>
-            <Layout onSignOut={handleSignOut} signingOut={signingOut} />
+            <Layout session={session} onSignOut={handleSignOut} signingOut={signingOut} />
           </RequireAuth>
         }
       >
         <Route
           index
           element={
-            <RequireProfileComplete
-              session={session}
-              profile={profile}
-              loadingProfile={loadingProfile}
-              profileError={profileError}
-            >
+            <RequireProfileComplete session={session} profile={profile} loadingProfile={loadingProfile} profileError={profileError}>
               <AppDashboard session={session} profile={profile} />
-            </RequireProfileComplete>
-          }
-        />
-
-        <Route
-          path="objetivos"
-          element={
-            <RequireProfileComplete
-              session={session}
-              profile={profile}
-              loadingProfile={loadingProfile}
-              profileError={profileError}
-            >
-              <AppHome session={session} profile={profile} onProfileSaved={setProfile} />
-            </RequireProfileComplete>
-          }
-        />
-
-        <Route
-          path="saude"
-          element={
-            <RequireProfileComplete
-              session={session}
-              profile={profile}
-              loadingProfile={loadingProfile}
-              profileError={profileError}
-            >
-              <HealthTriage session={session} profile={profile} onProfileSaved={setProfile} />
-            </RequireProfileComplete>
-          }
-        />
-
-        <Route
-          path="emocional"
-          element={
-            <RequireProfileComplete
-              session={session}
-              profile={profile}
-              loadingProfile={loadingProfile}
-              profileError={profileError}
-            >
-              <EmotionalTriage session={session} profile={profile} onProfileSaved={setProfile} />
-            </RequireProfileComplete>
-          }
-        />
-
-        <Route
-          path="emocional/sintomas"
-          element={
-            <RequireProfileComplete
-              session={session}
-              profile={profile}
-              loadingProfile={loadingProfile}
-              profileError={profileError}
-            >
-              <EmotionalSymptoms session={session} profile={profile} onProfileSaved={setProfile} />
-            </RequireProfileComplete>
-          }
-        />
-
-        <Route
-          path="conteudos"
-          element={
-            <RequireProfileComplete
-              session={session}
-              profile={profile}
-              loadingProfile={loadingProfile}
-              profileError={profileError}
-            >
-              <Conteudos session={session} isAdmin={isAdminFlag} />
-            </RequireProfileComplete>
-          }
-        />
-
-        <Route
-          path="medicos"
-          element={
-            <RequireProfileComplete
-              session={session}
-              profile={profile}
-              loadingProfile={loadingProfile}
-              profileError={profileError}
-            >
-              <Medicos />
-            </RequireProfileComplete>
-          }
-        />
-
-        <Route
-          path="receitas"
-          element={
-            <RequireProfileComplete
-              session={session}
-              profile={profile}
-              loadingProfile={loadingProfile}
-              profileError={profileError}
-            >
-              <Receitas />
-            </RequireProfileComplete>
-          }
-        />
-
-        <Route
-          path="pedidos"
-          element={
-            <RequireProfileComplete
-              session={session}
-              profile={profile}
-              loadingProfile={loadingProfile}
-              profileError={profileError}
-            >
-              <Pedidos />
-            </RequireProfileComplete>
-          }
-        />
-
-        <Route
-          path="alertas"
-          element={
-            <RequireProfileComplete
-              session={session}
-              profile={profile}
-              loadingProfile={loadingProfile}
-              profileError={profileError}
-            >
-              <AlertasUso />
-            </RequireProfileComplete>
-          }
-        />
-
-        <Route
-          path="produtos"
-          element={
-            <RequireProfileComplete
-              session={session}
-              profile={profile}
-              loadingProfile={loadingProfile}
-              profileError={profileError}
-            >
-              <Produtos />
-            </RequireProfileComplete>
-          }
-        />
-
-        <Route
-          path="carrinho"
-          element={
-            <RequireProfileComplete
-              session={session}
-              profile={profile}
-              loadingProfile={loadingProfile}
-              profileError={profileError}
-            >
-              <Carrinho />
-            </RequireProfileComplete>
-          }
-        />
-
-        <Route
-          path="pagamentos"
-          element={
-            <RequireProfileComplete
-              session={session}
-              profile={profile}
-              loadingProfile={loadingProfile}
-              profileError={profileError}
-            >
-              <Pagamentos />
             </RequireProfileComplete>
           }
         />
@@ -3322,37 +3144,36 @@ export default function App() {
         <Route
           path="perfil"
           element={
-            <RequireProfileComplete
-              session={session}
-              profile={profile}
-              loadingProfile={loadingProfile}
-              profileError={profileError}
-            >
-              <Perfil session={session} profile={profile} onProfileSaved={setProfile} />
+            <RequireProfileComplete session={session} profile={profile} loadingProfile={loadingProfile} profileError={profileError}>
+              <Perfil session={session} profile={profile} onProfileSaved={(p) => setProfile(p)} />
             </RequireProfileComplete>
           }
         />
 
         <Route
-          path="historico"
+          path="saude"
           element={
-            <RequireProfileComplete
-              session={session}
-              profile={profile}
-              loadingProfile={loadingProfile}
-              profileError={profileError}
-            >
-              <Historico profile={profile} />
+            <RequireProfileComplete session={session} profile={profile} loadingProfile={loadingProfile} profileError={profileError}>
+              <HealthTriage session={session} profile={profile} onProfileSaved={(p) => setProfile(p)} />
             </RequireProfileComplete>
           }
         />
 
         <Route
-          path="admin/conteudos"
+          path="emocional"
           element={
-            <RequireAdmin session={session} isAdmin={isAdminFlag}>
-              <AdminContents session={session} />
-            </RequireAdmin>
+            <RequireProfileComplete session={session} profile={profile} loadingProfile={loadingProfile} profileError={profileError}>
+              <EmotionalTriage session={session} profile={profile} onProfileSaved={(p) => setProfile(p)} />
+            </RequireProfileComplete>
+          }
+        />
+
+        <Route
+          path="emocional/sintomas"
+          element={
+            <RequireProfileComplete session={session} profile={profile} loadingProfile={loadingProfile} profileError={profileError}>
+              <EmotionalSymptoms session={session} profile={profile} onProfileSaved={(p) => setProfile(p)} />
+            </RequireProfileComplete>
           }
         />
       </Route>
