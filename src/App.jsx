@@ -377,9 +377,10 @@ function Input(props) {
   return <input {...props} style={{ ...styles.input, ...(props.style || {}) }} />;
 }
 
-function SelectButton({ active, title, subtitle, onClick }) {
+function SelectButton({ active, title, subtitle, onClick, className = "" }) {
   return (
     <button
+      className={className}
       type="button"
       onClick={onClick}
       style={{ ...styles.selectBtn, ...(active ? styles.selectBtnActive : {}) }}
@@ -780,7 +781,13 @@ function Wizard({ session, profile, onProfileSaved }) {
       <h3 style={{ margin: "0 0 8px" }}>Faixa etária</h3>
       <div style={styles.choiceGrid}>
         {["18-24", "25-34", "35-44", "45-54", "55+"].map((opt) => (
-          <SelectButton key={opt} active={ageRange === opt} title={opt} onClick={() => setAgeRange(opt)} />
+          <SelectButton
+            key={opt}
+            className="gp-card-link"
+            active={ageRange === opt}
+            title={opt}
+            onClick={() => setAgeRange(opt)}
+          />
         ))}
       </div>
 
@@ -791,6 +798,7 @@ function Wizard({ session, profile, onProfileSaved }) {
         {goals.map((g) => (
           <SelectButton
             key={g.key}
+            className="gp-card-link"
             active={mainGoal === g.key}
             title={g.key}
             subtitle={g.sub}
@@ -893,7 +901,13 @@ function Patologias({ session, profile, onProfileSaved }) {
 
         <div style={styles.choiceGrid2}>
           {conditions.map((c) => (
-            <SelectButton key={c} active={selectedConditions.includes(c)} title={c} onClick={() => toggle(c)} />
+            <SelectButton
+              key={c}
+              className="gp-card-link"
+              active={selectedConditions.includes(c)}
+              title={c}
+              onClick={() => toggle(c)}
+            />
           ))}
         </div>
 
@@ -1842,6 +1856,7 @@ function Perfil({ session, profile, onProfileSaved }) {
               {conditions.map((c) => (
                 <SelectButton
                   key={c}
+                  className="gp-card-link"
                   active={selectedConditions.includes(c)}
                   title={c}
                   onClick={() => toggleCondition(c)}
@@ -2763,6 +2778,7 @@ function EmotionalSymptoms({ session, profile, onProfileSaved }) {
           {options.map((opt) => (
             <SelectButton
               key={opt}
+              className="gp-card-link"
               active={selected.has(opt)}
               title={opt}
               onClick={() => toggle(opt)}
