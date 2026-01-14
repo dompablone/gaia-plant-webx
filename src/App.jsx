@@ -1,6 +1,6 @@
 // src/App.jsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Routes, Route, Navigate, Link, useNavigate } from "react-router-dom";
+import { Routes, Route, Navigate, Link, useNavigate, Outlet } from "react-router-dom";
 
 import { supabase } from "./lib/supabase.js";
 import gaiaIcon from "./assets/gaia-icon.png";
@@ -3085,14 +3085,19 @@ export default function App() {
       <Route path="/" element={<Navigate to={session?.user ? "/start" : "/auth"} replace />} />
 
       <Route path="/auth" element={session?.user ? <Navigate to="/start" replace /> : <Welcome />} />
-      <Route path="/login" element={session?.user ? <Navigate to="/start" replace /> : <Login />} />
       <Route path="/criar-conta" element={session?.user ? <Navigate to="/start" replace /> : <Signup />} />
+      <Route path="/login" element={session?.user ? <Navigate to="/start" replace /> : <Login />} />
 
       <Route
         path="/start"
         element={
           <RequireAuth session={session}>
-            <ProfileGate session={session} profile={profile} loadingProfile={loadingProfile} profileError={profileError} />
+            <ProfileGate
+              session={session}
+              profile={profile}
+              loadingProfile={loadingProfile}
+              profileError={profileError}
+            />
           </RequireAuth>
         }
       />
@@ -3101,7 +3106,7 @@ export default function App() {
         path="/perfil-clinico"
         element={
           <RequireAuth session={session}>
-            <ClinicalProfile session={session} profile={profile} onProfileSaved={(p) => setProfile(p)} />
+            <ClinicalProfile session={session} profile={profile} onProfileSaved={setProfile} />
           </RequireAuth>
         }
       />
@@ -3109,9 +3114,9 @@ export default function App() {
       <Route
         path="/wizard"
         element={
-          <RequireAuth session={session}>
-            <Wizard session={session} profile={profile} onProfileSaved={(p) => setProfile(p)} />
-          </RequireAuth>
+          <RequireBasicProfile session={session} profile={profile}>
+            <Wizard session={session} profile={profile} onProfileSaved={setProfile} />
+          </RequireBasicProfile>
         }
       />
 
@@ -3119,7 +3124,7 @@ export default function App() {
         path="/patologias"
         element={
           <RequireAuth session={session}>
-            <Patologias session={session} profile={profile} onProfileSaved={(p) => setProfile(p)} />
+            <Patologias session={session} profile={profile} onProfileSaved={setProfile} />
           </RequireAuth>
         }
       />
@@ -3128,24 +3133,34 @@ export default function App() {
         path="/app"
         element={
           <RequireAuth session={session}>
-            <Layout session={session} onSignOut={handleSignOut} signingOut={signingOut} />
+            <Layout onSignOut={handleSignOut} signingOut={signingOut} />
           </RequireAuth>
         }
       >
         <Route
           index
           element={
-            <RequireProfileComplete session={session} profile={profile} loadingProfile={loadingProfile} profileError={profileError}>
+            <RequireProfileComplete
+              session={session}
+              profile={profile}
+              loadingProfile={loadingProfile}
+              profileError={profileError}
+            >
               <AppDashboard session={session} profile={profile} />
             </RequireProfileComplete>
           }
         />
 
         <Route
-          path="perfil"
+          path="objetivos"
           element={
-            <RequireProfileComplete session={session} profile={profile} loadingProfile={loadingProfile} profileError={profileError}>
-              <Perfil session={session} profile={profile} onProfileSaved={(p) => setProfile(p)} />
+            <RequireProfileComplete
+              session={session}
+              profile={profile}
+              loadingProfile={loadingProfile}
+              profileError={profileError}
+            >
+              <AppHome session={session} profile={profile} onProfileSaved={setProfile} />
             </RequireProfileComplete>
           }
         />
@@ -3153,8 +3168,13 @@ export default function App() {
         <Route
           path="saude"
           element={
-            <RequireProfileComplete session={session} profile={profile} loadingProfile={loadingProfile} profileError={profileError}>
-              <HealthTriage session={session} profile={profile} onProfileSaved={(p) => setProfile(p)} />
+            <RequireProfileComplete
+              session={session}
+              profile={profile}
+              loadingProfile={loadingProfile}
+              profileError={profileError}
+            >
+              <HealthTriage session={session} profile={profile} onProfileSaved={setProfile} />
             </RequireProfileComplete>
           }
         />
@@ -3162,8 +3182,13 @@ export default function App() {
         <Route
           path="emocional"
           element={
-            <RequireProfileComplete session={session} profile={profile} loadingProfile={loadingProfile} profileError={profileError}>
-              <EmotionalTriage session={session} profile={profile} onProfileSaved={(p) => setProfile(p)} />
+            <RequireProfileComplete
+              session={session}
+              profile={profile}
+              loadingProfile={loadingProfile}
+              profileError={profileError}
+            >
+              <EmotionalTriage session={session} profile={profile} onProfileSaved={setProfile} />
             </RequireProfileComplete>
           }
         />
@@ -3171,9 +3196,163 @@ export default function App() {
         <Route
           path="emocional/sintomas"
           element={
-            <RequireProfileComplete session={session} profile={profile} loadingProfile={loadingProfile} profileError={profileError}>
-              <EmotionalSymptoms session={session} profile={profile} onProfileSaved={(p) => setProfile(p)} />
+            <RequireProfileComplete
+              session={session}
+              profile={profile}
+              loadingProfile={loadingProfile}
+              profileError={profileError}
+            >
+              <EmotionalSymptoms session={session} profile={profile} onProfileSaved={setProfile} />
             </RequireProfileComplete>
+          }
+        />
+
+        <Route
+          path="conteudos"
+          element={
+            <RequireProfileComplete
+              session={session}
+              profile={profile}
+              loadingProfile={loadingProfile}
+              profileError={profileError}
+            >
+              <Conteudos session={session} isAdmin={isAdminFlag} />
+            </RequireProfileComplete>
+          }
+        />
+
+        <Route
+          path="medicos"
+          element={
+            <RequireProfileComplete
+              session={session}
+              profile={profile}
+              loadingProfile={loadingProfile}
+              profileError={profileError}
+            >
+              <Medicos />
+            </RequireProfileComplete>
+          }
+        />
+
+        <Route
+          path="receitas"
+          element={
+            <RequireProfileComplete
+              session={session}
+              profile={profile}
+              loadingProfile={loadingProfile}
+              profileError={profileError}
+            >
+              <Receitas />
+            </RequireProfileComplete>
+          }
+        />
+
+        <Route
+          path="pedidos"
+          element={
+            <RequireProfileComplete
+              session={session}
+              profile={profile}
+              loadingProfile={loadingProfile}
+              profileError={profileError}
+            >
+              <Pedidos />
+            </RequireProfileComplete>
+          }
+        />
+
+        <Route
+          path="alertas"
+          element={
+            <RequireProfileComplete
+              session={session}
+              profile={profile}
+              loadingProfile={loadingProfile}
+              profileError={profileError}
+            >
+              <AlertasUso />
+            </RequireProfileComplete>
+          }
+        />
+
+        <Route
+          path="produtos"
+          element={
+            <RequireProfileComplete
+              session={session}
+              profile={profile}
+              loadingProfile={loadingProfile}
+              profileError={profileError}
+            >
+              <Produtos />
+            </RequireProfileComplete>
+          }
+        />
+
+        <Route
+          path="carrinho"
+          element={
+            <RequireProfileComplete
+              session={session}
+              profile={profile}
+              loadingProfile={loadingProfile}
+              profileError={profileError}
+            >
+              <Carrinho />
+            </RequireProfileComplete>
+          }
+        />
+
+        <Route
+          path="pagamentos"
+          element={
+            <RequireProfileComplete
+              session={session}
+              profile={profile}
+              loadingProfile={loadingProfile}
+              profileError={profileError}
+            >
+              <Pagamentos />
+            </RequireProfileComplete>
+          }
+        />
+
+        <Route
+          path="perfil"
+          element={
+            <RequireProfileComplete
+              session={session}
+              profile={profile}
+              loadingProfile={loadingProfile}
+              profileError={profileError}
+            >
+              <Perfil session={session} profile={profile} onProfileSaved={setProfile} />
+            </RequireProfileComplete>
+          }
+        />
+
+        <Route
+          path="historico"
+          element={
+            <RequireProfileComplete
+              session={session}
+              profile={profile}
+              loadingProfile={loadingProfile}
+              profileError={profileError}
+            >
+              <Historico profile={profile} />
+            </RequireProfileComplete>
+          }
+        />
+
+        <Route
+          path="admin/conteudos"
+          element={
+            <RequireAdmin session={session} isAdmin={isAdminFlag}>
+              <AdminContents session={session} />
+            </RequireAdmin>
           }
         />
       </Route>
