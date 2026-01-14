@@ -320,7 +320,11 @@ function AppLayout({ session, signingOut, onSignOut }) {
 }
 
 function Card({ children }) {
-  return <div style={styles.card}>{children}</div>;
+  return (
+    <div style={styles.card} className="gaia-force-text">
+      {children}
+    </div>
+  );
 }
 
 function GlobalLoading({ title = "Carregando…", subtitle = "", onRetry, onGoLogin }) {

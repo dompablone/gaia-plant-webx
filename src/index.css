@@ -42,6 +42,7 @@ button, button:visited, button:hover, button:active {
   color: #111 !important;
   -webkit-text-fill-color: #111 !important;
   text-decoration: none !important;
+  font-weight: 700 !important;
 }
 
 /* FIX DEFINITIVO iOS Safari — labels clicáveis azuis */
