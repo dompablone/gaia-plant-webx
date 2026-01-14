@@ -1,5 +1,5 @@
 // src/App.jsx
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Routes, Route, Navigate, Link, useNavigate, Outlet } from "react-router-dom";
 
 import { supabase } from "./lib/supabase.js";
@@ -83,9 +83,6 @@ function logWarn(key, details) {
   console.warn(`[GAIA] ${key}`, details || "");
 }
 
-function sleep(ms) {
-  return new Promise((r) => setTimeout(r, ms));
-}
 
 async function withTimeout(promise, ms, msg = "Timeout") {
   let t;
@@ -2286,888 +2283,213 @@ function AppHome({ session, profile, onProfileSaved }) {
 
   const objetivos = useMemo(
     () => [
-      { titulo: "Melhora do Sono", descricao: "Ajuda para dormir e manter o descanso." },
-      { titulo: "Mais Calma", descricao: "Controle da agitação e do nervosismo diário." },
-      { titulo: "Aumento do Foco", descricao: "Mais concentração nas suas atividades." },
-      { titulo: "Menos Estresse", descricao: "Melhora do estresse e exaustão diária." },
-      { titulo: "Controle da Ansiedade", descricao: "Busca por mais equilíbrio emocional." },
-      { titulo: "Dor Crônica", descricao: "Alívio de dores constantes." },
-      { titulo: "Melhora no Esporte", descricao: "Mais energia e menos fadiga muscular." },
-      { titulo: "Aumento da Libido", descricao: "Recupere a sensação de prazer." },
-      { titulo: "Enxaqueca", descricao: "Alívio para dores de cabeça fortes." },
-      { titulo: "Controle da TPM", descricao: "Controle para mudanças de humor e irritação." },
-    ],
-    []
-  );
-
-  async function handlePickGoal(titulo) {
-    setSaving(true);
-    setMsg("");
-    try {
-      // salva a triagem no perfil (você pode trocar o campo depois, mas assim já funciona hoje)
-      const fresh = await upsertMyProfile(userId, { main_goal: titulo });
-      onProfileSaved(fresh);
-      nav("/app/saude", { replace: true });
-      setMsg(`✅ Salvo: ${titulo}`);
-    } catch (err) {
-      setMsg(err?.message || "Erro ao salvar objetivo.");
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  return (
-    <div style={{ display: "grid", gap: 20 }}>
-      <div style={{ textAlign: "center" }}>
-        <h1 style={{ margin: "0 0 6px", fontSize: 30 }}>Gaia Plant</h1>
-        <p style={{ margin: 0, opacity: 0.75 }}>Selecione o principal objetivo</p>
-      </div>
-
-      <Card>
-        <h3 style={{ marginTop: 0, color: "#2e7d32" }}>Objetivos Mais Procurados</h3>
-
-        <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
-          {objetivos.map((item) => {
-            const active = profile?.main_goal === item.titulo;
-            return (
-              <button
-                key={item.titulo}
-                type="button"
-                disabled={saving}
-                onClick={() => handlePickGoal(item.titulo)}
-                style={{
-                  textAlign: "left",
-                  border: active ? "2px solid #43a047" : "2px solid #111",
-                  borderRadius: 14,
-                  padding: 14,
-                  background: "#fff",
-                  cursor: saving ? "not-allowed" : "pointer",
-                  opacity: saving ? 0.7 : 1,
-                }}
-              >
-                <div style={{ fontWeight: 800, fontSize: 18, marginBottom: 6 }}>{item.titulo}</div>
-                <div style={{ fontSize: 14, opacity: 0.8 }}>{item.descricao}</div>
-              </button>
-            );
-          })}
-        </div>
-
-        {msg ? <p style={{ marginTop: 12, color: msg.startsWith("✅") ? "#2e7d32" : "#b00020" }}>{msg}</p> : null}
-      </Card>
-    </div>
-  );
-}
-
-// -------------------- Triagem Resumo --------------------
-function TriagemResumo({ profile }) {
-  const nav = useNavigate();
-
-  return (
-    <Card>
-      <h2 style={{ marginTop: 0 }}>Triagem salva ✅</h2>
-      <p style={{ opacity: 0.8 }}>
-        Objetivo principal: <b>{profile?.main_goal || "—"}</b>
-      </p>
-      <button
-        type="button"
-        onClick={() => nav("/app/saude", { replace: true })}
-        style={{ ...styles.btn, marginTop: 14, width: "100%" }}
-      >
-        Próximo
-      </button>
-    </Card>
-  );
-}
-
-// -------------------- Saúde (questionário estilo “blis”) --------------------
-function HealthTriage({ session, profile, onProfileSaved }) {
-  const nav = useNavigate();
-  const userId = session?.user?.id;
-
-  const [saving, setSaving] = useState(false);
-  const [msg, setMsg] = useState("");
-
-  const questions = useMemo(
-    () => [
-      { key: "digestivos", label: "Tem problemas digestivos?", placeholder: "Quanto tempo e quais sintomas?" },
-      { key: "evacuar", label: "Tem dificuldades para evacuar?", placeholder: "Com que frequência? Há quanto tempo?" },
-      { key: "urinar", label: "Tem dificuldades para urinar?", placeholder: "Explique rapidamente" },
-      { key: "cabeca_intensa", label: "Tem dores de cabeças intensas?", placeholder: "Frequência e intensidade" },
-      { key: "alimentacao", label: "Possui problemas com alimentação?", placeholder: "Quanto tempo, e qual o problema?" },
-      { key: "acorda_cansado", label: "Acorda cansado?", placeholder: "Com que frequência?" },
-      { key: "fuma", label: "Você fuma?", placeholder: "Com que frequência?" },
-      { key: "alcool", label: "Faz uso de bebida alcoólica?", placeholder: "Frequência e tipo de bebida" },
-      { key: "ja_usou_cannabis", label: "Já usou cannabis (maconha)?", placeholder: "Com que frequência? Há quanto tempo?" },
-      { key: "arritmia", label: "Possui arritmia cardíaca?", placeholder: "Detalhe (se souber)" },
-      { key: "psicose", label: "Histórico de psicose / esquizofrenia?", placeholder: "Explique brevemente" },
-      { key: "tratamento_atual", label: "Atualmente, faz algum tratamento?", placeholder: "Qual tratamento?" },
-      { key: "usa_remedios", label: "Faz uso frequente de remédios?", placeholder: "Quais e com que frequência?" },
-      { key: "doenca_cronica", label: "Possui alguma doença crônica?", placeholder: "Qual?" },
-      { key: "cirurgia", label: "Já fez alguma cirurgia?", placeholder: "Qual e quando?" },
-      { key: "alergia", label: "Possui alguma alergia?", placeholder: "Qual alergia?" },
-    ],
-    []
-  );
-
-  const [answers, setAnswers] = useState(() => normalizeTriage(profile?.health_triage));
-
-  useEffect(() => {
-    setAnswers(normalizeTriage(profile?.health_triage));
-  }, [profile]);
-
-  function toggle(key) {
-    setAnswers((prev) => {
-      const cur = prev[key] ?? { on: false, note: "" };
-      const nextOn = !cur.on;
-      return { ...prev, [key]: { ...cur, on: nextOn, note: nextOn ? cur.note : "" } };
-    });
-  }
-
-  function setNote(key, note) {
-    setAnswers((prev) => {
-      const cur = prev[key] ?? { on: false, note: "" };
-      return { ...prev, [key]: { ...cur, note } };
-    });
-  }
-
-  async function handleNext() {
-    setSaving(true);
-    setMsg("");
-    try {
-      const patch = { health_triage: answers };
-      const fresh = await upsertMyProfile(userId, patch);
-      onProfileSaved(fresh);
-      nav("/app/emocional", { replace: true });
-    } catch (err) {
-      setMsg(err?.message || "Erro ao salvar triagem de saúde.");
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  return (
-    <div style={{ display: "grid", gap: 16 }}>
-      <Card>
-        <h2 style={{ margin: 0, fontSize: 26 }}>Sobre a sua saúde</h2>
-        <p style={{ marginTop: 8, opacity: 0.75 }}>Responda com muita atenção.</p>
-      </Card>
-
-      <Card>
-        <div className="gaia-force-text">
-          <div style={{ display: "grid", gap: 14 }}>
-            {questions.map((q) => {
-              const row = answers?.[q.key] ?? { on: false, note: "" };
-              const on = Boolean(row.on);
-
-              return (
-                <div key={q.key} style={{ padding: "12px 0", borderBottom: "1px solid rgba(0,0,0,0.08)" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
-                    <div style={{ fontWeight: 800 }}>{q.label}</div>
-
-                    <button
-                      type="button"
-                      onClick={() => toggle(q.key)}
-                      disabled={saving}
-                      style={{
-                        width: 56,
-                        height: 32,
-                        borderRadius: 999,
-                        border: "1px solid rgba(0,0,0,0.2)",
-                        background: on ? "#43a047" : "#333",
-                        position: "relative",
-                        cursor: saving ? "not-allowed" : "pointer",
-                        opacity: saving ? 0.7 : 1,
-                      }}
-                      aria-pressed={on}
-                    >
-                      <span
-                        style={{
-                          position: "absolute",
-                          top: 3,
-                          left: on ? 28 : 4,
-                          width: 26,
-                          height: 26,
-                          borderRadius: 999,
-                          background: "#fff",
-                          transition: "left 120ms ease",
-                        }}
-                      />
-                    </button>
-                  </div>
-
-                  {on ? (
-                    <div style={{ marginTop: 10 }}>
-                      <Input
-                        value={row.note || ""}
-                        onChange={(e) => setNote(q.key, e.target.value)}
-                        placeholder={q.placeholder}
-                        disabled={saving}
-                        style={{ borderRadius: 12 }}
-                      />
-                    </div>
-                  ) : null}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        <button
-          type="button"
-          onClick={handleNext}
-          disabled={saving}
-          style={{
-            ...styles.btn,
-            width: "100%",
-            marginTop: 16,
-            padding: "14px 18px",
-            borderRadius: 999,
-            fontSize: 16,
-          }}
-        >
-          {saving ? "Salvando..." : "Próximo"}
-        </button>
-
-        {msg ? <p style={{ marginTop: 12, color: "#b00020" }}>{msg}</p> : null}
-      </Card>
-    </div>
-  );
-}
-
-// -------------------- Emocional (questionário) --------------------
-function EmotionalTriage({ session, profile, onProfileSaved }) {
-  const nav = useNavigate();
-  const userId = session?.user?.id;
-
-  const [saving, setSaving] = useState(false);
-  const [msg, setMsg] = useState("");
-
-  const questions = useMemo(
-    () => [
-      { key: "tristeza", label: "Sente muita tristeza?", placeholder: "Com qual frequência e motivo?" },
-      { key: "foco", label: "Perde o foco facilmente?", placeholder: "Especifique" },
-      { key: "memoria", label: "Tem problemas de memória?", placeholder: "Há quanto tempo, e qual a intensidade?" },
-      { key: "irritado_triste", label: "Fica facilmente irritado ou triste?", placeholder: "Com que frequência?" },
-      { key: "estresse", label: "Possui problemas com estresse?", placeholder: "Quais os motivos?" },
-      { key: "panico", label: "Já teve episódios de pânico?", placeholder: "Com que frequência e há quanto tempo?" },
-      { key: "diagnostico_psicose", label: "Já recebeu diagnóstico de esquizofrenia ou psicose?", placeholder: "Há quanto tempo?" },
-      { key: "familia_psicose", label: "Algum parente próximo tem esquizofrenia ou psicose?", placeholder: "Qual parente?" },
-      { key: "diagnostico_ans_depr", label: "Já teve diagnóstico de ansiedade ou depressão?", placeholder: "Há quanto tempo?" },
-    ],
-    []
-  );
-
-  const [answers, setAnswers] = useState(() => normalizeTriage(profile?.emotional_triage));
-
-  useEffect(() => {
-    setAnswers(normalizeTriage(profile?.emotional_triage));
-  }, [profile]);
-
-  function toggle(key) {
-    setAnswers((prev) => {
-      const cur = prev[key] ?? { on: false, note: "" };
-      const nextOn = !cur.on;
-      return { ...prev, [key]: { ...cur, on: nextOn, note: nextOn ? cur.note : "" } };
-    });
-  }
-
-  function setNote(key, note) {
-    setAnswers((prev) => {
-      const cur = prev[key] ?? { on: false, note: "" };
-      return { ...prev, [key]: { ...cur, note } };
-    });
-  }
-
-  async function handleNext() {
-    setSaving(true);
-    setMsg("");
-    try {
-      const patch = { emotional_triage: answers };
-      const fresh = await upsertMyProfile(userId, patch);
-      onProfileSaved(fresh);
-
-      // Próximo passo: sintomas emocionais multi-seleção.
-      nav("/app/emocional/sintomas", { replace: true });
-    } catch (err) {
-      setMsg(err?.message || "Erro ao salvar triagem emocional.");
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  return (
-    <div style={{ display: "grid", gap: 16 }}>
-      <Card>
-        <h2 style={{ margin: 0, fontSize: 26 }}>Sobre o seu estado emocional atual</h2>
-        <p style={{ marginTop: 8, opacity: 0.75 }}>Responda com muita atenção.</p>
-      </Card>
-
-      <Card>
-        <div style={{ display: "grid", gap: 14 }}>
-          {questions.map((q) => {
-            const row = answers?.[q.key] ?? { on: false, note: "" };
-            const on = Boolean(row.on);
-
-            return (
-              <div key={q.key} style={{ padding: "12px 0", borderBottom: "1px solid rgba(0,0,0,0.08)" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
-                  <div style={{ fontWeight: 800 }}>{q.label}</div>
-
-                  <button
-                    type="button"
-                    onClick={() => toggle(q.key)}
-                    disabled={saving}
-                    style={{
-                      width: 56,
-                      height: 32,
-                      borderRadius: 999,
-                      border: "1px solid rgba(0,0,0,0.2)",
-                      background: on ? "#43a047" : "#333",
-                      position: "relative",
-                      cursor: saving ? "not-allowed" : "pointer",
-                      opacity: saving ? 0.7 : 1,
-                    }}
-                    aria-pressed={on}
-                  >
-                    <span
-                      style={{
-                        position: "absolute",
-                        top: 3,
-                        left: on ? 28 : 4,
-                        width: 26,
-                        height: 26,
-                        borderRadius: 999,
-                        background: "#fff",
-                        transition: "left 120ms ease",
-                      }}
-                    />
-                  </button>
-                </div>
-
-                {on ? (
-                  <div style={{ marginTop: 10 }}>
-                    <Input
-                      value={row.note || ""}
-                      onChange={(e) => setNote(q.key, e.target.value)}
-                      placeholder={q.placeholder}
-                      disabled={saving}
-                      style={{ borderRadius: 12 }}
-                    />
-                  </div>
-                ) : null}
-              </div>
-            );
-          })}
-        </div>
-
-        <button
-          type="button"
-          onClick={handleNext}
-          disabled={saving}
-          style={{
-            ...styles.btn,
-            width: "100%",
-            marginTop: 16,
-            padding: "14px 18px",
-            borderRadius: 999,
-            fontSize: 16,
-          }}
-        >
-          {saving ? "Salvando..." : "Próximo"}
-        </button>
-
-        {msg ? <p style={{ marginTop: 12, color: "#b00020" }}>{msg}</p> : null}
-      </Card>
-    </div>
-  );
-}
-
-// -------------------- Sintomas emocionais (multi-seleção) --------------------
-function EmotionalSymptoms({ session, profile, onProfileSaved }) {
-  const nav = useNavigate();
-  const userId = session?.user?.id;
-
-  const [saving, setSaving] = useState(false);
-  const [msg, setMsg] = useState("");
-
-  const options = useMemo(
-    () => [
-      "Ansiedade",
-      "Crises de pânico",
-      "Tristeza constante",
-      "Irritabilidade",
-      "Falta de motivação",
-      "Dificuldade de concentração",
-      "Pensamentos acelerados",
-      "Oscilação de humor",
-      "Sensação de vazio",
-      "Estresse elevado",
-      "Dificuldade para dormir",
-      "Pesadelos / sono agitado",
-      "Apetite alterado",
-      "Isolamento social",
-    ],
-    []
-  );
-
-  const [selected, setSelected] = useState(() => {
-    const saved = normalizeTriage(profile?.emotional_triage)?.sintomas_emocionais?.note || "";
-    const listPart = saved.split("|")[0].trim();
-    const arr = listPart ? listPart.split(",").map((s) => s.trim()).filter(Boolean) : [];
-    return new Set(arr);
-  });
-
-  const [note, setNote] = useState(() => {
-    const saved = normalizeTriage(profile?.emotional_triage)?.sintomas_emocionais?.note || "";
-    const parts = saved.split("|");
-    return parts.length > 1 ? parts.slice(1).join("|").trim() : "";
-  });
-
-  useEffect(() => {
-    const saved = normalizeTriage(profile?.emotional_triage)?.sintomas_emocionais?.note || "";
-    const listPart = saved.split("|")[0].trim();
-    const arr = listPart ? listPart.split(",").map((s) => s.trim()).filter(Boolean) : [];
-    setSelected(new Set(arr));
-
-    const parts = saved.split("|");
-    setNote(parts.length > 1 ? parts.slice(1).join("|").trim() : "");
-  }, [profile]);
-
-  function toggle(opt) {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(opt)) next.delete(opt);
-      else next.add(opt);
-      return next;
-    });
-  }
-
-  async function handleSave() {
-    setSaving(true);
-    setMsg("");
-    try {
-      const selectedArr = Array.from(selected);
-      const noteTrim = note.trim();
-
-      // ✅ Salva dentro do JSON existente `emotional_triage` (sem depender de novas colunas no Supabase)
-      // Guardamos os sintomas como um item especial compatível com normalizeTriage.
-      const mergedEmo = {
-        ...normalizeTriage(profile?.emotional_triage),
-        sintomas_emocionais: {
-          on: selectedArr.length > 0,
-          note: selectedArr.join(", ") + (noteTrim ? ` | ${noteTrim}` : ""),
-        },
-      };
-
-      const patch = { emotional_triage: mergedEmo };
-      const fresh = await upsertMyProfile(userId, patch);
-      onProfileSaved(fresh);
-
-      // Próximo passo: dashboard do app
-      nav("/app", { replace: true });
-    } catch (err) {
-      setMsg(err?.message || "Erro ao salvar sintomas emocionais.");
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  return (
-    <div style={{ display: "grid", gap: 16 }}>
-      <Card>
-        <h2 style={{ margin: 0, fontSize: 26 }}>Como você está se sentindo ultimamente?</h2>
-        <p style={{ marginTop: 8, opacity: 0.75 }}>
-          Selecione tudo o que fizer sentido. Você pode alterar depois.
-        </p>
-      </Card>
-
-      <Card>
-        <div className="gaia-force-text">
-          <div style={styles.choiceGrid2}>
-            {options.map((opt) => (
-              <SelectButton
-                key={opt}
-                className="gp-card-link"
-                active={selected.has(opt)}
-                title={opt}
-                onClick={() => toggle(opt)}
-              />
-            ))}
-          </div>
-        </div>
-
-        <div style={{ marginTop: 16 }}>
-          <Field label="Algo a acrescentar? (opcional)">
-            <Input
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              placeholder="Ex: crises à noite, piora aos domingos, gatilhos, etc."
-              disabled={saving}
-            />
-          </Field>
-        </div>
-
-        <button
-          type="button"
-          onClick={handleSave}
-          disabled={saving}
-          style={{
-            ...styles.btn,
-            width: "100%",
-            marginTop: 8,
-            padding: "14px 18px",
-            borderRadius: 999,
-            fontSize: 16,
-            opacity: saving ? 0.7 : 1,
-          }}
-        >
-          {saving ? "Salvando..." : "Salvar e continuar"}
-        </button>
-
-        <button
-          type="button"
-          onClick={() => nav("/app/emocional", { replace: true })}
-          disabled={saving}
-          style={{
-            ...styles.btnGhost,
-            width: "100%",
-            marginTop: 10,
-            padding: "14px 18px",
-            borderRadius: 999,
-            fontSize: 16,
-            opacity: saving ? 0.7 : 1,
-          }}
-        >
-          Voltar
-        </button>
-
-        {msg ? <p style={{ marginTop: 12, color: "#b00020" }}>{msg}</p> : null}
-      </Card>
-    </div>
-  );
-}
-
-
-// -------------------- Guards --------------------
-function RequireAuth({ session, children }) {
-  if (!session?.user) return <Navigate to="/auth" replace />;
-  return children;
-}
-
-function RequireBasicProfile({ session, profile, children }) {
-  if (!session?.user) return <Navigate to="/auth" replace />;
-  if (!profile || !isPersonalComplete(profile)) return <Navigate to="/perfil-clinico" replace />;
-  return children;
-}
-
-function RequireProfileComplete({ session, profile, loadingProfile, profileError, children }) {
-  const nav = useNavigate();
-
-  if (!session?.user) return <Navigate to="/auth" replace />;
-
-  // Se deu erro ao carregar perfil (timeout, RLS, rede, etc.), não fica preso em "Carregando..."
-  if (profileError) {
-    return (
-      <Card>
-        <h3 style={{ marginTop: 0 }}>Não consegui carregar seu perfil</h3>
-        <p style={{ opacity: 0.8, marginTop: 6 }}>
-          {String(profileError?.message || profileError)}
-        </p>
-        <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 14 }}>
-          <button type="button" style={styles.btn} onClick={() => nav(0)}>
-            Tentar novamente
-          </button>
-          <Link to="/auth" style={{ ...styles.btnGhost, textDecoration: "none" }}>
-            Ir para login
-          </Link>
-        </div>
-      </Card>
-    );
-  }
-
-  // Enquanto está carregando, mostra loading
-  if (loadingProfile) {
-    return (
-      <Card>
-        <div style={{ opacity: 0.75 }}>Carregando...</div>
-      </Card>
-    );
-  }
-
-  if (!profile) return <Navigate to="/perfil-clinico" replace />;
-
-  if (!isPersonalComplete(profile)) return <Navigate to="/perfil-clinico" replace />;
-  if (!isWizardComplete(profile)) return <Navigate to="/wizard" replace />;
-  if (!hasConditionsSelected(profile)) return <Navigate to="/patologias" replace />;
-
-  return children;
-}
-
-// -------------------- App (carrega session/profile + rotas) --------------------
+      { titulo: "Melhora do Sono", descricao: "Ajuda para dorm<truncated__content/>
+// -------------------- App main router and session/profile state --------------------
 export default function App() {
+  const nav = useNavigate();
+
   const [session, setSession] = useState(null);
   const [profile, setProfile] = useState(null);
   const [loadingProfile, setLoadingProfile] = useState(false);
   const [profileError, setProfileError] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
+
   const [signingOut, setSigningOut] = useState(false);
 
+  // session
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data?.session ?? null);
+    let unsub = null;
+
+    (async () => {
+      try {
+        const { data } = await supabase.auth.getSession();
+        setSession(data?.session ?? null);
+      } catch {
+        setSession(null);
+      }
+    })();
+
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, newSession) => {
+      setSession(newSession);
     });
 
-    const { data: listener } = supabase.auth.onAuthStateChange((_e, s) => {
-      setSession(s);
-    });
-
-    return () => listener?.subscription?.unsubscribe();
+    unsub = sub?.subscription;
+    return () => {
+      unsub?.unsubscribe?.();
+    };
   }, []);
 
+  // profile
   useEffect(() => {
-    if (!session?.user?.id) {
+    const uid = session?.user?.id;
+
+    if (!uid) {
       setProfile(null);
+      setProfileError(null);
+      setIsAdmin(false);
       return;
     }
 
-    setLoadingProfile(true);
-    fetchMyProfile(session.user.id)
-      .then((p) => setProfile(p))
-      .catch((e) => setProfileError(e))
-      .finally(() => setLoadingProfile(false));
+    let alive = true;
+
+    (async () => {
+      try {
+        setLoadingProfile(true);
+        setProfileError(null);
+
+        const p = await fetchMyProfile(uid);
+        if (!alive) return;
+        setProfile(p);
+
+        try {
+          const admin = await fetchIsAdmin(uid, session);
+          if (!alive) return;
+          setIsAdmin(Boolean(admin));
+        } catch {
+          setIsAdmin(false);
+        }
+      } catch (e) {
+        if (!alive) return;
+        setProfileError(e);
+      } finally {
+        if (alive) setLoadingProfile(false);
+      }
+    })();
+
+    return () => {
+      alive = false;
+    };
   }, [session]);
 
   async function handleSignOut() {
     setSigningOut(true);
-    await supabase.auth.signOut();
-    setSigningOut(false);
-    setSession(null);
-    setProfile(null);
+    try {
+      await supabase.auth.signOut();
+    } catch {
+      // ignore
+    } finally {
+      setSigningOut(false);
+      setSession(null);
+      setProfile(null);
+      setIsAdmin(false);
+      nav("/auth", { replace: true });
+    }
   }
 
   return (
     <Routes>
-      <Route path="/" element={<Navigate to={session ? "/start" : "/auth"} replace />} />
+      {/* Entry */}
+      <Route path="/" element={<Navigate to={session?.user ? "/start" : "/auth"} replace />} />
 
-      <Route path="/auth" element={<Welcome />} />
-      <Route path="/login" element={<Login />} />
-      <Route path="/criar-conta" element={<Signup />} />
-
+      {/* Public auth */}
       <Route
-        path="/start"
+        path="/auth"
         element={
-          <ProfileGate
-            session={session}
-            profile={profile}
-            loadingProfile={loadingProfile}
-            profileError={profileError}
-          />
+          <Shell session={session} onSignOut={handleSignOut} signingOut={signingOut}>
+            <Welcome />
+          </Shell>
+        }
+      />
+      <Route
+        path="/login"
+        element={
+          <Shell session={session} onSignOut={handleSignOut} signingOut={signingOut}>
+            <Login />
+          </Shell>
+        }
+      />
+      <Route
+        path="/criar-conta"
+        element={
+          <Shell session={session} onSignOut={handleSignOut} signingOut={signingOut}>
+            <Signup />
+          </Shell>
         }
       />
 
+      {/* Gate decides next onboarding step */}
+      <Route
+        path="/start"
+        element={
+          <Shell session={session} onSignOut={handleSignOut} signingOut={signingOut}>
+            <ProfileGate
+              session={session}
+              profile={profile}
+              loadingProfile={loadingProfile}
+              profileError={profileError}
+            />
+          </Shell>
+        }
+      />
+
+      {/* Onboarding */}
       <Route
         path="/perfil-clinico"
         element={
-          <ClinicalProfile
-            session={session}
-            profile={profile}
-            onProfileSaved={setProfile}
-          />
+          <Shell session={session} onSignOut={handleSignOut} signingOut={signingOut}>
+            <RequireAuth session={session}>
+              <ClinicalProfile session={session} profile={profile} onProfileSaved={(p) => setProfile(p)} />
+            </RequireAuth>
+          </Shell>
         }
       />
 
       <Route
         path="/wizard"
         element={
-          <Wizard
-            session={session}
-            profile={profile}
-            onProfileSaved={setProfile}
-          />
+          <Shell session={session} onSignOut={handleSignOut} signingOut={signingOut}>
+            <RequireAuth session={session}>
+              <Wizard session={session} profile={profile} onProfileSaved={(p) => setProfile(p)} />
+            </RequireAuth>
+          </Shell>
         }
       />
 
       <Route
         path="/patologias"
         element={
-          <Patologias
-            session={session}
-            profile={profile}
-            onProfileSaved={setProfile}
-          />
+          <Shell session={session} onSignOut={handleSignOut} signingOut={signingOut}>
+            <RequireAuth session={session}>
+              <Patologias session={session} profile={profile} onProfileSaved={(p) => setProfile(p)} />
+            </RequireAuth>
+          </Shell>
         }
       />
 
+      {/* App area (nested) */}
       <Route
         path="/app"
         element={
-          <Layout
+          <RequireProfileComplete
             session={session}
-            signingOut={signingOut}
-            onSignOut={handleSignOut}
-          />
+            profile={profile}
+            loadingProfile={loadingProfile}
+            profileError={profileError}
+          >
+            <Layout session={session} onSignOut={handleSignOut} signingOut={signingOut} />
+          </RequireProfileComplete>
         }
       >
         <Route index element={<AppDashboard session={session} profile={profile} />} />
-        <Route path="perfil" element={<Perfil session={session} profile={profile} onProfileSaved={setProfile} />} />
-        <Route path="historico" element={<Historico profile={profile} />} />
+        <Route path="conteudos" element={<Conteudos session={session} isAdmin={isAdmin} />} />
         <Route path="produtos" element={<Produtos />} />
         <Route path="carrinho" element={<Carrinho />} />
         <Route path="pagamentos" element={<Pagamentos />} />
-        <Route path="conteudos" element={<Conteudos session={session} isAdmin={isAdmin} />} />
         <Route path="medicos" element={<Medicos />} />
         <Route path="receitas" element={<Receitas />} />
         <Route path="pedidos" element={<Pedidos />} />
         <Route path="alertas" element={<AlertasUso />} />
+        <Route path="perfil" element={<Perfil session={session} profile={profile} onProfileSaved={(p) => setProfile(p)} />} />
+        <Route path="historico" element={<Historico profile={profile} />} />
 
-        <Route path="saude" element={<HealthTriage session={session} profile={profile} onProfileSaved={setProfile} />} />
-        <Route path="emocional" element={<EmotionalTriage session={session} profile={profile} onProfileSaved={setProfile} />} />
-        <Route path="emocional/sintomas" element={<EmotionalSymptoms session={session} profile={profile} onProfileSaved={setProfile} />} />
+        {/* triage routes */}
+        <Route path="saude" element={<HealthTriage session={session} profile={profile} onProfileSaved={(p) => setProfile(p)} />} />
+        <Route path="emocional" element={<EmotionalTriage session={session} profile={profile} onProfileSaved={(p) => setProfile(p)} />} />
+        <Route path="emocional/sintomas" element={<EmotionalSymptoms session={session} profile={profile} onProfileSaved={(p) => setProfile(p)} />} />
       </Route>
 
+      {/* Fallback */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }
-// -------------------- Styles --------------------
-const styles = {
-  page: {
-    minHeight: "100vh",
-    background: "#f6f7f8",
-    fontFamily:
-      'ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif',
-    color: "#111",
-  },
-  topbar: {
-    position: "sticky",
-    top: 0,
-    zIndex: 10,
-    background: "rgba(246,247,248,0.9)",
-    backdropFilter: "blur(8px)",
-    borderBottom: "1px solid rgba(0,0,0,0.08)",
-    padding: "14px 18px",
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  appHeader: {
-    display: "flex",
-    alignItems: "center",
-    gap: 12,
-  },
-  appLogo: {
-    width: 36,
-    height: 36,
-  },
-  appTitle: {
-    fontSize: 18,
-    fontWeight: 600,
-    lineHeight: "20px",
-  },
-  appSubtitle: {
-    fontSize: 12,
-    opacity: 0.7,
-  },
-  authPage: {
-    minHeight: "100vh",
-    background: "#e9efe8",
-    padding: "16px 12px",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  authCard: {
-    width: "100%",
-    maxWidth: 420,
-    margin: "0 auto",
-    background: "#fff",
-    borderRadius: 18,
-    padding: 18,
-    border: "1px solid rgba(0,0,0,0.08)",
-    boxShadow: "0 10px 30px rgba(0,0,0,0.08)",
-    boxSizing: "border-box",
-    minHeight: "82vh",
-    display: "flex",
-    flexDirection: "column",
-    justifyContent: "center",
-    alignItems: "stretch",
-  },
-  authTitle: {
-    margin: "10px 0 6px",
-    fontSize: 22,
-    color: "#2f5d36",
-  },
-  authSubtitle: {
-    margin: 0,
-    fontSize: 13,
-    opacity: 0.75,
-  },
-  logoDot: { width: 18, height: 18, borderRadius: 6, background: "#2e7d32" },
-  container: {
-    maxWidth: 420,
-    width: "100%",
-    boxSizing: "border-box",
-    margin: "0 auto",
-    padding: "16px 12px 28px",
-  },
-  card: {
-    background: "#fff",
-    border: "1px solid rgba(0,0,0,0.08)",
-    borderRadius: 16,
-    padding: 16,
-    boxShadow: "0 10px 30px rgba(0,0,0,0.06)",
-    width: "100%",
-    boxSizing: "border-box",
-    overflow: "hidden",
-  },
-  input: {
-    width: "100%",
-    padding: "12px 14px",
-    borderRadius: 12,
-    border: "1px solid rgba(0,0,0,0.15)",
-    outline: "none",
-    fontSize: 14,
-  },
-  btn: {
-    background: "#43a047",
-    color: "#fff",
-    border: "none",
-    padding: "12px 18px",
-    borderRadius: 999,
-    fontWeight: 800,
-    cursor: "pointer",
-  },
-  btnGhost: {
-    background: "transparent",
-    color: "#111",
-    border: "1px solid rgba(0,0,0,0.2)",
-    padding: "12px 18px",
-    borderRadius: 999,
-    fontWeight: 800,
-    cursor: "pointer",
-  },
-  choiceGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12 },
-  choiceGrid2: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12 },
-  selectBtn: {
-    textAlign: "left",
-    width: "100%",
-    padding: 16,
-    borderRadius: 16,
-    border: "2px solid rgba(0,0,0,0.12)",
-    background: "#fff",
-    cursor: "pointer",
-  },
-  selectBtnActive: {
-    border: "2px solid #43a047",
-    boxShadow: "0 10px 24px rgba(67, 160, 71, 0.18)",
-  },
-  pill: {
-    padding: "10px 14px",
-    borderRadius: 999,
-    border: "1px solid rgba(0,0,0,0.2)",
-    background: "#fff",
-    cursor: "pointer",
-    fontWeight: 700,
-  },
-  pillActive: { border: "1px solid #43a047", background: "rgba(67,160,71,0.10)" },
-};
