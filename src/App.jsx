@@ -2905,463 +2905,130 @@ function RequireProfileComplete({ session, profile, loadingProfile, profileError
 
 // -------------------- App (carrega session/profile + rotas) --------------------
 export default function App() {
-  const nav = useNavigate();
-  const [authChecked, setAuthChecked] = useState(false);
-
   const [session, setSession] = useState(null);
   const [profile, setProfile] = useState(null);
-
   const [loadingProfile, setLoadingProfile] = useState(false);
   const [profileError, setProfileError] = useState(null);
-
-  const [isAdminFlag, setIsAdminFlag] = useState(false);
-  const [loadingAdmin, setLoadingAdmin] = useState(false);
-
-  const fetchSeqRef = useRef(0);
-  const lastLoadedUserIdRef = useRef(null);
-  const inFlightProfileRef = useRef(null);
-  const signingOutRef = useRef(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
 
-  async function loadProfileFor(userId) {
-    if (!userId) return;
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      setSession(data?.session ?? null);
+    });
 
-    if (lastLoadedUserIdRef.current === userId && profile && !profileError) {
+    const { data: listener } = supabase.auth.onAuthStateChange((_e, s) => {
+      setSession(s);
+    });
+
+    return () => listener?.subscription?.unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    if (!session?.user?.id) {
+      setProfile(null);
       return;
     }
 
-    if (inFlightProfileRef.current?.userId === userId && inFlightProfileRef.current?.promise) {
-      return inFlightProfileRef.current.promise;
-    }
-
-    const seq = ++fetchSeqRef.current;
     setLoadingProfile(true);
-    setProfileError(null);
-
-    const promise = (async () => {
-      try {
-        const p = await fetchMyProfile(userId);
-        if (seq !== fetchSeqRef.current) return;
-        setProfile(p);
-        lastLoadedUserIdRef.current = userId;
-      } catch (err) {
-        if (seq !== fetchSeqRef.current) return;
-        setProfile(null);
-        setProfileError(err);
-      } finally {
-        if (seq !== fetchSeqRef.current) return;
-        setLoadingProfile(false);
-        if (inFlightProfileRef.current?.userId === userId) inFlightProfileRef.current = null;
-      }
-    })();
-
-    inFlightProfileRef.current = { userId, promise };
-    return promise;
-  }
-
-  async function loadAdminFor(userId, sess) {
-    setLoadingAdmin(true);
-    try {
-      const ok = await fetchIsAdmin(userId, sess);
-      setIsAdminFlag(Boolean(ok));
-    } catch {
-      setIsAdminFlag(false);
-    } finally {
-      setLoadingAdmin(false);
-    }
-  }
-
-  useEffect(() => {
-    let unsub = null;
-
-    (async () => {
-      try {
-        const { data } = await supabase.auth.getSession();
-        const sess = data?.session ?? null;
-        setSession(sess);
-        setAuthChecked(true);
-
-        if (sess?.user?.id) {
-          await loadProfileFor(sess.user.id);
-          await loadAdminFor(sess.user.id, sess);
-        } else {
-          lastLoadedUserIdRef.current = null;
-          inFlightProfileRef.current = null;
-          setProfile(null);
-          setProfileError(null);
-          setLoadingProfile(false);
-          setIsAdminFlag(false);
-        }
-      } catch (err) {
-        setSession(null);
-        setProfile(null);
-        setProfileError(err);
-        setLoadingProfile(false);
-        setIsAdminFlag(false);
-        setAuthChecked(true);
-      }
-    })();
-
-    const { data: sub } = supabase.auth.onAuthStateChange(async (_event, newSession) => {
-      setAuthChecked(true);
-      setSession(newSession);
-
-      if (_event === "INITIAL_SESSION") {
-        return;
-      }
-
-      const newUserId = newSession?.user?.id || null;
-
-      if (newUserId) {
-        if (lastLoadedUserIdRef.current !== newUserId) {
-          await loadProfileFor(newUserId);
-        }
-        await loadAdminFor(newUserId, newSession);
-      } else {
-        fetchSeqRef.current++;
-        lastLoadedUserIdRef.current = null;
-        inFlightProfileRef.current = null;
-        setProfile(null);
-        setProfileError(null);
-        setLoadingProfile(false);
-        setIsAdminFlag(false);
-      }
-    });
-
-    unsub = sub?.subscription;
-
-    return () => {
-      fetchSeqRef.current++;
-      lastLoadedUserIdRef.current = null;
-      inFlightProfileRef.current = null;
-      unsub?.unsubscribe?.();
-    };
-  }, []);
+    fetchMyProfile(session.user.id)
+      .then((p) => setProfile(p))
+      .catch((e) => setProfileError(e))
+      .finally(() => setLoadingProfile(false));
+  }, [session]);
 
   async function handleSignOut() {
-    if (signingOutRef.current) return;
-    signingOutRef.current = true;
     setSigningOut(true);
-
-    try {
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
-    } catch (err) {
-      logWarn("signout_error", { message: String(err?.message || err) });
-    } finally {
-      fetchSeqRef.current++;
-      lastLoadedUserIdRef.current = null;
-      inFlightProfileRef.current = null;
-
-      setSession(null);
-      setProfile(null);
-      setProfileError(null);
-      setLoadingProfile(false);
-      setIsAdminFlag(false);
-
-      nav("/auth", { replace: true });
-
-      signingOutRef.current = false;
-      setSigningOut(false);
-      setAuthChecked(true);
-    }
-  }
-
-  if (!authChecked) {
-    return (
-      <div style={styles.page}>
-        <div style={{ maxWidth: 920, margin: "0 auto", padding: "60px 16px" }}>
-          <div style={{ ...styles.card, textAlign: "center" }}>
-            <div style={{ fontWeight: 900, fontSize: 18 }}>Carregando sessão…</div>
-            <div style={{ marginTop: 10, opacity: 0.75 }}>Aguarde um instante.</div>
-          </div>
-        </div>
-      </div>
-    );
+    await supabase.auth.signOut();
+    setSigningOut(false);
+    setSession(null);
+    setProfile(null);
   }
 
   return (
     <Routes>
-      <Route path="/" element={<Navigate to={session?.user ? "/start" : "/auth"} replace />} />
+      <Route path="/" element={<Navigate to={session ? "/start" : "/auth"} replace />} />
 
-      <Route path="/auth" element={session?.user ? <Navigate to="/start" replace /> : <Welcome />} />
-      <Route path="/criar-conta" element={session?.user ? <Navigate to="/start" replace /> : <Signup />} />
-      <Route path="/login" element={session?.user ? <Navigate to="/start" replace /> : <Login />} />
+      <Route path="/auth" element={<Welcome />} />
+      <Route path="/login" element={<Login />} />
+      <Route path="/criar-conta" element={<Signup />} />
 
       <Route
         path="/start"
         element={
-          <RequireAuth session={session}>
-            <ProfileGate
-              session={session}
-              profile={profile}
-              loadingProfile={loadingProfile}
-              profileError={profileError}
-            />
-          </RequireAuth>
+          <ProfileGate
+            session={session}
+            profile={profile}
+            loadingProfile={loadingProfile}
+            profileError={profileError}
+          />
         }
       />
 
       <Route
         path="/perfil-clinico"
         element={
-          <RequireAuth session={session}>
-            <ClinicalProfile session={session} profile={profile} onProfileSaved={setProfile} />
-          </RequireAuth>
+          <ClinicalProfile
+            session={session}
+            profile={profile}
+            onProfileSaved={setProfile}
+          />
         }
       />
 
       <Route
         path="/wizard"
         element={
-          <RequireBasicProfile session={session} profile={profile}>
-            <Wizard session={session} profile={profile} onProfileSaved={setProfile} />
-          </RequireBasicProfile>
+          <Wizard
+            session={session}
+            profile={profile}
+            onProfileSaved={setProfile}
+          />
         }
       />
 
       <Route
         path="/patologias"
         element={
-          <RequireAuth session={session}>
-            <Patologias session={session} profile={profile} onProfileSaved={setProfile} />
-          </RequireAuth>
+          <Patologias
+            session={session}
+            profile={profile}
+            onProfileSaved={setProfile}
+          />
         }
       />
 
       <Route
         path="/app"
         element={
-          <RequireAuth session={session}>
-            <Layout onSignOut={handleSignOut} signingOut={signingOut} />
-          </RequireAuth>
+          <Layout
+            session={session}
+            signingOut={signingOut}
+            onSignOut={handleSignOut}
+          />
         }
       >
-        <Route
-          index
-          element={
-            <RequireProfileComplete
-              session={session}
-              profile={profile}
-              loadingProfile={loadingProfile}
-              profileError={profileError}
-            >
-              <AppDashboard session={session} profile={profile} />
-            </RequireProfileComplete>
-          }
-        />
+        <Route index element={<AppDashboard session={session} profile={profile} />} />
+        <Route path="perfil" element={<Perfil session={session} profile={profile} onProfileSaved={setProfile} />} />
+        <Route path="historico" element={<Historico profile={profile} />} />
+        <Route path="produtos" element={<Produtos />} />
+        <Route path="carrinho" element={<Carrinho />} />
+        <Route path="pagamentos" element={<Pagamentos />} />
+        <Route path="conteudos" element={<Conteudos session={session} isAdmin={isAdmin} />} />
+        <Route path="medicos" element={<Medicos />} />
+        <Route path="receitas" element={<Receitas />} />
+        <Route path="pedidos" element={<Pedidos />} />
+        <Route path="alertas" element={<AlertasUso />} />
 
-        <Route
-          path="objetivos"
-          element={
-            <RequireProfileComplete
-              session={session}
-              profile={profile}
-              loadingProfile={loadingProfile}
-              profileError={profileError}
-            >
-              <AppHome session={session} profile={profile} onProfileSaved={setProfile} />
-            </RequireProfileComplete>
-          }
-        />
-
-        <Route
-          path="saude"
-          element={
-            <RequireProfileComplete
-              session={session}
-              profile={profile}
-              loadingProfile={loadingProfile}
-              profileError={profileError}
-            >
-              <HealthTriage session={session} profile={profile} onProfileSaved={setProfile} />
-            </RequireProfileComplete>
-          }
-        />
-
-        <Route
-          path="emocional"
-          element={
-            <RequireProfileComplete
-              session={session}
-              profile={profile}
-              loadingProfile={loadingProfile}
-              profileError={profileError}
-            >
-              <EmotionalTriage session={session} profile={profile} onProfileSaved={setProfile} />
-            </RequireProfileComplete>
-          }
-        />
-
-        <Route
-          path="emocional/sintomas"
-          element={
-            <RequireProfileComplete
-              session={session}
-              profile={profile}
-              loadingProfile={loadingProfile}
-              profileError={profileError}
-            >
-              <EmotionalSymptoms session={session} profile={profile} onProfileSaved={setProfile} />
-            </RequireProfileComplete>
-          }
-        />
-
-        <Route
-          path="conteudos"
-          element={
-            <RequireProfileComplete
-              session={session}
-              profile={profile}
-              loadingProfile={loadingProfile}
-              profileError={profileError}
-            >
-              <Conteudos session={session} isAdmin={isAdminFlag} />
-            </RequireProfileComplete>
-          }
-        />
-
-        <Route
-          path="medicos"
-          element={
-            <RequireProfileComplete
-              session={session}
-              profile={profile}
-              loadingProfile={loadingProfile}
-              profileError={profileError}
-            >
-              <Medicos />
-            </RequireProfileComplete>
-          }
-        />
-
-        <Route
-          path="receitas"
-          element={
-            <RequireProfileComplete
-              session={session}
-              profile={profile}
-              loadingProfile={loadingProfile}
-              profileError={profileError}
-            >
-              <Receitas />
-            </RequireProfileComplete>
-          }
-        />
-
-        <Route
-          path="pedidos"
-          element={
-            <RequireProfileComplete
-              session={session}
-              profile={profile}
-              loadingProfile={loadingProfile}
-              profileError={profileError}
-            >
-              <Pedidos />
-            </RequireProfileComplete>
-          }
-        />
-
-        <Route
-          path="alertas"
-          element={
-            <RequireProfileComplete
-              session={session}
-              profile={profile}
-              loadingProfile={loadingProfile}
-              profileError={profileError}
-            >
-              <AlertasUso />
-            </RequireProfileComplete>
-          }
-        />
-
-        <Route
-          path="produtos"
-          element={
-            <RequireProfileComplete
-              session={session}
-              profile={profile}
-              loadingProfile={loadingProfile}
-              profileError={profileError}
-            >
-              <Produtos />
-            </RequireProfileComplete>
-          }
-        />
-
-        <Route
-          path="carrinho"
-          element={
-            <RequireProfileComplete
-              session={session}
-              profile={profile}
-              loadingProfile={loadingProfile}
-              profileError={profileError}
-            >
-              <Carrinho />
-            </RequireProfileComplete>
-          }
-        />
-
-        <Route
-          path="pagamentos"
-          element={
-            <RequireProfileComplete
-              session={session}
-              profile={profile}
-              loadingProfile={loadingProfile}
-              profileError={profileError}
-            >
-              <Pagamentos />
-            </RequireProfileComplete>
-          }
-        />
-
-        <Route
-          path="perfil"
-          element={
-            <RequireProfileComplete
-              session={session}
-              profile={profile}
-              loadingProfile={loadingProfile}
-              profileError={profileError}
-            >
-              <Perfil session={session} profile={profile} onProfileSaved={setProfile} />
-            </RequireProfileComplete>
-          }
-        />
-
-        <Route
-          path="historico"
-          element={
-            <RequireProfileComplete
-              session={session}
-              profile={profile}
-              loadingProfile={loadingProfile}
-              profileError={profileError}
-            >
-              <Historico profile={profile} />
-            </RequireProfileComplete>
-          }
-        />
-
-        <Route
-          path="admin/conteudos"
-          element={
-            <RequireAdmin session={session} isAdmin={isAdminFlag}>
-              <AdminContents session={session} />
-            </RequireAdmin>
-          }
-        />
+        <Route path="saude" element={<HealthTriage session={session} profile={profile} onProfileSaved={setProfile} />} />
+        <Route path="emocional" element={<EmotionalTriage session={session} profile={profile} onProfileSaved={setProfile} />} />
+        <Route path="emocional/sintomas" element={<EmotionalSymptoms session={session} profile={profile} onProfileSaved={setProfile} />} />
       </Route>
 
-      <Route path="*" element={<Navigate to={session?.user ? "/start" : "/auth"} replace />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }
-
 // -------------------- Styles --------------------
 const styles = {
   page: {
