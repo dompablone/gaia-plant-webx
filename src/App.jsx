@@ -1852,19 +1852,21 @@ function Perfil({ session, profile, onProfileSaved }) {
           </Field>
 
           <Field label="Condições selecionadas">
-            <div style={styles.choiceGrid2}>
-              {conditions.map((c) => (
-                <SelectButton
-                  key={c}
-                  className="gp-card-link"
-                  active={selectedConditions.includes(c)}
-                  title={c}
-                  onClick={() => toggleCondition(c)}
-                />
-              ))}
-            </div>
-            <div style={{ marginTop: 8, opacity: 0.75, fontSize: 13 }}>
-              Selecionadas: <b>{selectedConditions.length}</b>
+            <div className="gaia-force-text">
+              <div style={styles.choiceGrid2}>
+                {conditions.map((c) => (
+                  <SelectButton
+                    key={c}
+                    className="gp-card-link"
+                    active={selectedConditions.includes(c)}
+                    title={c}
+                    onClick={() => toggleCondition(c)}
+                  />
+                ))}
+              </div>
+              <div style={{ marginTop: 8, opacity: 0.75, fontSize: 13 }}>
+                Selecionadas: <b>{selectedConditions.length}</b>
+              </div>
             </div>
           </Field>
 
@@ -2447,61 +2449,63 @@ function HealthTriage({ session, profile, onProfileSaved }) {
       </Card>
 
       <Card>
-        <div style={{ display: "grid", gap: 14 }}>
-          {questions.map((q) => {
-            const row = answers?.[q.key] ?? { on: false, note: "" };
-            const on = Boolean(row.on);
+        <div className="gaia-force-text">
+          <div style={{ display: "grid", gap: 14 }}>
+            {questions.map((q) => {
+              const row = answers?.[q.key] ?? { on: false, note: "" };
+              const on = Boolean(row.on);
 
-            return (
-              <div key={q.key} style={{ padding: "12px 0", borderBottom: "1px solid rgba(0,0,0,0.08)" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
-                  <div style={{ fontWeight: 800 }}>{q.label}</div>
+              return (
+                <div key={q.key} style={{ padding: "12px 0", borderBottom: "1px solid rgba(0,0,0,0.08)" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
+                    <div style={{ fontWeight: 800 }}>{q.label}</div>
 
-                  <button
-                    type="button"
-                    onClick={() => toggle(q.key)}
-                    disabled={saving}
-                    style={{
-                      width: 56,
-                      height: 32,
-                      borderRadius: 999,
-                      border: "1px solid rgba(0,0,0,0.2)",
-                      background: on ? "#43a047" : "#333",
-                      position: "relative",
-                      cursor: saving ? "not-allowed" : "pointer",
-                      opacity: saving ? 0.7 : 1,
-                    }}
-                    aria-pressed={on}
-                  >
-                    <span
-                      style={{
-                        position: "absolute",
-                        top: 3,
-                        left: on ? 28 : 4,
-                        width: 26,
-                        height: 26,
-                        borderRadius: 999,
-                        background: "#fff",
-                        transition: "left 120ms ease",
-                      }}
-                    />
-                  </button>
-                </div>
-
-                {on ? (
-                  <div style={{ marginTop: 10 }}>
-                    <Input
-                      value={row.note || ""}
-                      onChange={(e) => setNote(q.key, e.target.value)}
-                      placeholder={q.placeholder}
+                    <button
+                      type="button"
+                      onClick={() => toggle(q.key)}
                       disabled={saving}
-                      style={{ borderRadius: 12 }}
-                    />
+                      style={{
+                        width: 56,
+                        height: 32,
+                        borderRadius: 999,
+                        border: "1px solid rgba(0,0,0,0.2)",
+                        background: on ? "#43a047" : "#333",
+                        position: "relative",
+                        cursor: saving ? "not-allowed" : "pointer",
+                        opacity: saving ? 0.7 : 1,
+                      }}
+                      aria-pressed={on}
+                    >
+                      <span
+                        style={{
+                          position: "absolute",
+                          top: 3,
+                          left: on ? 28 : 4,
+                          width: 26,
+                          height: 26,
+                          borderRadius: 999,
+                          background: "#fff",
+                          transition: "left 120ms ease",
+                        }}
+                      />
+                    </button>
                   </div>
-                ) : null}
-              </div>
-            );
-          })}
+
+                  {on ? (
+                    <div style={{ marginTop: 10 }}>
+                      <Input
+                        value={row.note || ""}
+                        onChange={(e) => setNote(q.key, e.target.value)}
+                        placeholder={q.placeholder}
+                        disabled={saving}
+                        style={{ borderRadius: 12 }}
+                      />
+                    </div>
+                  ) : null}
+                </div>
+              );
+            })}
+          </div>
         </div>
 
         <button
@@ -2774,16 +2778,18 @@ function EmotionalSymptoms({ session, profile, onProfileSaved }) {
       </Card>
 
       <Card>
-        <div style={styles.choiceGrid2}>
-          {options.map((opt) => (
-            <SelectButton
-              key={opt}
-              className="gp-card-link"
-              active={selected.has(opt)}
-              title={opt}
-              onClick={() => toggle(opt)}
-            />
-          ))}
+        <div className="gaia-force-text">
+          <div style={styles.choiceGrid2}>
+            {options.map((opt) => (
+              <SelectButton
+                key={opt}
+                className="gp-card-link"
+                active={selected.has(opt)}
+                title={opt}
+                onClick={() => toggle(opt)}
+              />
+            ))}
+          </div>
         </div>
 
         <div style={{ marginTop: 16 }}>

@@ -28,3 +28,18 @@ a:active {
   -webkit-text-fill-color: #111 !important;
   text-decoration: none !important;
 }
+
+/* FIX DEFINITIVO iOS Safari – remover azul de textos clicáveis */
+a, a:visited, a:hover, a:active,
+button, button:visited, button:hover, button:active {
+  color: inherit !important;
+  text-decoration: none !important;
+  -webkit-text-fill-color: currentColor !important;
+}
+
+.gaia-force-text,
+.gaia-force-text * {
+  color: #111 !important;
+  -webkit-text-fill-color: #111 !important;
+  text-decoration: none !important;
+}
