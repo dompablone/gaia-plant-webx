@@ -1,0 +1,9 @@
+{
+  "appId": "com.gaiaplant.app",
+  "appName": "Gaia Plant",
+  "webDir": "dist",
+  "server": {
+    "url": "https://gaiaplant.base44.app",
+    "cleartext": true
+  }
+}

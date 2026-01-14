@@ -1,0 +1,30 @@
+# Node / Vite
+node_modules
+dist
+dist-ssr
+.vite
+*.log
+*.local
+
+# Env
+.env
+.env.*
+.DS_Store
+
+# Editors
+.vscode
+.idea
+
+# Vercel
+.vercel
+
+# Capacitor / iOS / Android (não versionar builds/caches)
+ios/Pods
+ios/DerivedData
+ios/build
+android/.gradle
+android/app/build
+android/build
+
+# Gradle wrapper dists cache (NUNCA versionar)
+gradle jdk/wrapper/dists
