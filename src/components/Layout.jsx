@@ -1,122 +1,23 @@
-import { Outlet, Link, useNavigate } from "react-router-dom";
-import gaiaLogo from "../assets/gaia-icon.png";
+import { Outlet, Link } from "react-router-dom";
 
-export default function Layout({ onSignOut, signingOut = false }) {
-  const nav = useNavigate();
-  const iconScale = 1.5;
-  const actionButtonStyle = {
-    padding: `${8 * iconScale}px ${10 * iconScale}px`,
-    borderRadius: 999,
-    border: "1px solid #7fb069",
-    color: "#2f5d36",
-    fontWeight: 700,
-    fontSize: 12 * iconScale,
-    background: "#fff",
-    boxShadow: "0 6px 16px rgba(127, 176, 105, 0.18)",
-  };
-
+export default function Layout() {
   return (
-    <div style={{ minHeight: "100vh", background: "#e9efe8", padding: 16 }}>
-      <div
-        style={{
-          width: "100%",
-          maxWidth: 420,
-          aspectRatio: "9 / 16",
-          minHeight: "100vh",
-          maxHeight: "92vh",
-          margin: "0 auto",
-          background: "#f6f7f8",
-          borderRadius: 24,
-          boxShadow: "0 20px 40px rgba(0,0,0,0.08)",
-          overflow: "hidden",
-        }}
-      >
-        <nav
-          style={{
-            padding: 12,
-            borderBottom: "1px solid rgba(0,0,0,0.08)",
-            display: "grid",
-            gridTemplateColumns: "auto 1fr auto",
-            alignItems: "center",
-            gap: 8,
-            background: "#f6f7f8",
-          }}
-        >
-          <Link
-            to="/app"
-            style={{
-              display: "flex",
-              alignItems: "center",
-              textDecoration: "none",
-              justifySelf: "start",
-            }}
-          >
-            <img src={gaiaLogo} alt="Gaia Plant" style={{ width: 96, height: 96 }} />
-          </Link>
+    <div style={{ padding: 20 }}>
+      <h2>Gaia App</h2>
 
-          <div />
+      <nav style={{ display: "flex", gap: 16, marginBottom: 20 }}>
+        <Link to="/app">Dashboard</Link>
+        <Link to="/app/pagamentos">Pagamentos</Link>
+        <Link to="/start">Start</Link>
+        <Link to="/perfil-clinico">Perfil Clínico</Link>
+        <Link to="/wizard">Wizard</Link>
+        <Link to="/patologias">Patologias</Link>
+      </nav>
 
-          <div style={{ display: "flex", alignItems: "center", gap: 8, justifySelf: "end" }}>
-            <button
-              type="button"
-              onClick={() => nav(-1)}
-              style={{
-                padding: "6px 10px",
-                borderRadius: 999,
-                border: "1px solid #7fb069",
-                color: "#2f5d36",
-                fontWeight: 700,
-                fontSize: 12,
-                background: "#fff",
-                boxShadow: "0 6px 16px rgba(127, 176, 105, 0.18)",
-                cursor: "pointer",
-              }}
-            >
-              Voltar
-            </button>
-            <Link
-              to="/app/carrinho"
-              style={{
-                textDecoration: "none",
-                ...actionButtonStyle,
-              }}
-            >
-              🛒
-            </Link>
-            <Link
-              to="/perfil-clinico"
-              style={{
-                textDecoration: "none",
-                ...actionButtonStyle,
-              }}
-            >
-              Perfil
-            </Link>
-            <button
-              type="button"
-              onClick={onSignOut}
-              disabled={signingOut}
-              style={{
-                ...actionButtonStyle,
-                opacity: signingOut ? 0.7 : 1,
-                cursor: signingOut ? "not-allowed" : "pointer",
-              }}
-            >
-              {signingOut ? "Saindo..." : "Sair"}
-            </button>
-          </div>
-        </nav>
+      <hr />
 
-        <main
-          style={{
-            padding: 14,
-            overflowY: "auto",
-            overflowX: "hidden",
-            maxHeight: "calc(92vh - 72px)",
-          }}
-        >
-          <Outlet />
-        </main>
+      <div style={{ marginTop: 20 }}>
+        <Outlet />
       </div>
     </div>
   );
