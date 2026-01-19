@@ -908,7 +908,15 @@ function RouterApp() {
     setProfile(null);
     setProfileError(null);
     setLoadingProfile(false);
-  }
+  } Etapa 1 — Congelar o App.jsx
+
+Agora, considere o App.jsx atual como:
+
+“versão estável da Fase 1”
+
+✔️ Commit isso
+✔️ Backup local
+✔️ Não mexer mais nele diretamente
 
   return (
     <Shell session={session} onSignOut={handleSignOut}>

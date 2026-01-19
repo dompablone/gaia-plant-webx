@@ -1,3 +1,20 @@
+html,
+body,
+#root {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+}
+
 body {
   font-family: "Helvetica Neue", Arial, sans-serif;
 }
@@ -64,4 +81,34 @@ label * {
 /* força remoção de comportamento de link */
 label {
   -webkit-tap-highlight-color: transparent;
+}
+
+.authCard input,
+.authCard select,
+.authCard textarea {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+input,
+select,
+textarea {
+  box-sizing: border-box;
+  max-width: 100%;
+}
+
+@media (max-width: 480px) {
+  .gaia-topbar {
+    padding: 10px 12px !important;
+  }
+  .gaia-topbar-title {
+    font-size: 16px !important;
+  }
+  .gaia-topbar-sub {
+    font-size: 11px !important;
+  }
+  .gaia-topbar-btn {
+    padding: 10px 12px !important;
+    font-size: 14px !important;
+  }
 }
