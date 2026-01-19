@@ -3,43 +3,9 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Routes, Route, Navigate, Link, useNavigate, Outlet } from "react-router-dom";
 
 import { supabase } from "./lib/supabase.js";
+import { fetchMyProfile, upsertMyProfile, logWarn, normalizeTriage } from "./services/profileService.js";
 import gaiaIcon from "./assets/gaia-icon.png";
 import Layout from "./components/Layout.jsx";
- 
-
-// -------------------- Admin auth (server-side via Supabase table) --------------------
-// Fallback temporário: enquanto a tabela/políticas não existirem, mantém seu e-mail como admin
-const ADMIN_EMAIL_FALLBACK = ["pablo.felix.carvalho@gmail.com"];
-
-async function fetchIsAdmin(userId, session) {
-  // Sem sessão, nunca é admin
-  if (!userId || !session?.user) return false;
-
-  // 1) Preferência: tabela app_admins (server-side)
-  try {
-    const { data, error } = await supabase
-      .from("app_admins")
-      .select("user_id")
-      .eq("user_id", userId)
-      .maybeSingle();
-
-    // Se a tabela existir e não deu erro, admin = existe linha
-    if (!error) return Boolean(data?.user_id);
-
-    // Se a tabela não existir ainda, cai no fallback
-    const msg = String(error?.message || "");
-    if (msg.toLowerCase().includes("does not exist") || msg.toLowerCase().includes("relation")) {
-      const email = (session?.user?.email || "").toLowerCase();
-      return ADMIN_EMAIL_FALLBACK.includes(email);
-    }
-
-    // Outros erros (RLS etc.) => não admin
-    return false;
-  } catch {
-    const email = (session?.user?.email || "").toLowerCase();
-    return ADMIN_EMAIL_FALLBACK.includes(email);
-  }
-}
 
 /**
  * FLUXO (OFICIAL)
@@ -71,153 +37,15 @@ function getNextRoute(profile) {
 }
 
 
-// -------------------- Helpers --------------------
-// -------------------- Telemetria (controlada) --------------------
-const __warnOnce = new Map();
-function logWarn(key, details) {
-  // evita spam: 1 log por chave a cada 30s
-  const now = Date.now();
-  const last = __warnOnce.get(key) || 0;
-  if (now - last < 30000) return;
-  __warnOnce.set(key, now);
-  console.warn(`[GAIA] ${key}`, details || "");
+async function saveProfileAndReload(userId, patch) {
+  await upsertMyProfile(userId, patch);
+  return await fetchMyProfile(userId);
 }
 
+
+// -------------------- Helpers --------------------
 function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));
-}
-
-async function withTimeout(promise, ms, msg = "Timeout") {
-  let t;
-  const timeout = new Promise((_, rej) => {
-    t = setTimeout(() => rej(new Error(msg)), ms);
-  });
-  try {
-    return await Promise.race([promise, timeout]);
-  } finally {
-    clearTimeout(t);
-  }
-}
-
-// normaliza objetos de triagem (aceita boolean legado)
-function normalizeTriage(raw) {
-  const obj = raw && typeof raw === "object" ? raw : {};
-  const out = {};
-  for (const [k, v] of Object.entries(obj)) {
-    if (typeof v === "boolean") out[k] = { on: v, note: "" };
-    else if (v && typeof v === "object") out[k] = { on: Boolean(v.on), note: String(v.note ?? "") };
-  }
-  return out;
-}
-
-async function fetchMyProfile(userId) {
-  const cacheKey = userId ? `gaia.profile.cache:${userId}` : "gaia.profile.cache:anon";
-
-  for (let attempt = 0; attempt < 3; attempt++) {
-    try {
-      const query = supabase
-        .from("profiles")
-        .select(
-          [
-            "id",
-            "email",
-            "full_name",
-            "phone",
-            "cpf",
-            "birth_date",
-            "conditions",
-            "age_range",
-            "used_cannabis",
-            "main_reason",
-            "has_doctor",
-            "main_goal",
-            "share_data",
-            "tipo",
-            "direcionamento",
-            "liberacao",
-            "health_triage",
-            "emotional_triage",
-            "onboarding_answers",
-            "onboarding_completed",
-            "created_at",
-            "updated_at",
-          ].join(",")
-        )
-        .eq("id", userId)
-        .maybeSingle();
-
-      const { data, error } = await withTimeout(query, 45000, "Supabase timeout ao buscar perfil");
-
-      if (error) throw error;
-
-      const normalized = data
-        ? {
-            ...data,
-            health_triage: normalizeTriage(data.health_triage),
-            emotional_triage: normalizeTriage(data.emotional_triage),
-          }
-        : null;
-
-      if (normalized) {
-        try {
-          localStorage.setItem(cacheKey, JSON.stringify(normalized));
-        } catch {}
-      }
-
-      return normalized;
-    } catch (err) {
-      const msg = String(err?.message || err).toLowerCase();
-      if (msg.includes("timeout")) {
-        logWarn("profile_fetch_timeout", { userId, attempt });
-      }
-      const isNetwork = msg.includes("timeout") || msg.includes("failed to fetch") || msg.includes("network");
-      if (!isNetwork) {
-        logWarn("profile_fetch_error", { userId, attempt, message: String(err?.message || err) });
-      }
-
-      if (isNetwork && attempt === 0) {
-        try {
-          const cached = localStorage.getItem(cacheKey);
-          if (cached) return JSON.parse(cached);
-        } catch {}
-      }
-
-      if (!isNetwork || attempt === 2) throw err;
-
-      await new Promise((r) => setTimeout(r, 500 + attempt * 800));
-    }
-  }
-
-  return null;
-}
-
-async function upsertMyProfile(userId, patch) {
-  // 2 tentativas em caso de timeout intermitente
-  for (let attempt = 0; attempt < 2; attempt++) {
-    try {
-      const query = supabase
-        .from("profiles")
-        .upsert({ id: userId, ...patch, updated_at: new Date().toISOString() }, { onConflict: "id" })
-        .select("*")
-        .maybeSingle();
-
-      const { data, error } = await withTimeout(query, 20000, "Supabase timeout ao salvar perfil");
-      if (error) throw error;
-      return data ?? null;
-    } catch (err) {
-      const msg = String(err?.message || err);
-      if (msg.toLowerCase().includes("timeout")) {
-        logWarn("profile_save_timeout", { userId, attempt });
-      }
-      const isTimeout = msg.toLowerCase().includes("timeout");
-      if (isTimeout) {
-        logWarn("profile_upsert_timeout", { userId, attempt });
-      }
-      if (!isTimeout || attempt === 1) throw err;
-      await new Promise((r) => setTimeout(r, 400));
-    }
-  }
-  return null;
 }
 
 const CART_STORAGE_KEY = "gaia.cart.items";
@@ -245,24 +73,36 @@ function Header({ userEmail, onSignOut, signingOut }) {
   const nav = useNavigate();
 
   return (
-    <div style={styles.topbar}>
+    <div style={styles.topbar} className="gaia-topbar">
       <div style={styles.appHeader} onClick={() => nav("/")}>
         <img
           src={gaiaIcon}
           alt="Gaia Plant"
           style={{
-            width: 88,
-            height: 88,
+            width: "clamp(56px, 14vw, 88px)",
+            height: "clamp(56px, 14vw, 88px)",
             marginRight: 12,
           }}
         />
         <div>
-          <div style={styles.appTitle}>Gaia Plant</div>
-          <div style={styles.appSubtitle}>Cannabis Medicinal</div>
+          <div style={styles.appTitle} className="gaia-topbar-title">
+            Gaia Plant
+          </div>
+          <div style={styles.appSubtitle} className="gaia-topbar-sub">
+            Cannabis Medicinal
+          </div>
         </div>
       </div>
 
-      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 10,
+          flexWrap: "wrap",
+          justifyContent: "flex-end",
+        }}
+      >
         {userEmail ? (
           <>
             <span style={{ fontSize: 12, opacity: 0.75 }}>{userEmail}</span>
@@ -280,6 +120,7 @@ function Header({ userEmail, onSignOut, signingOut }) {
               }}
               aria-label="Abrir pagamentos"
               title="Pagamentos"
+              className="gaia-topbar-btn"
             >
               🛒
             </Link>
@@ -292,6 +133,7 @@ function Header({ userEmail, onSignOut, signingOut }) {
                 opacity: signingOut ? 0.7 : 1,
                 cursor: signingOut ? "not-allowed" : "pointer",
               }}
+              className="gaia-topbar-btn"
             >
               {signingOut ? "Saindo..." : "Sair"}
             </button>
@@ -435,7 +277,7 @@ function Signup() {
     try {
       const { data, error } = await supabase.auth.signUp({ email, password: pass });
       if (error) throw error;
-      if (data?.session?.user) nav("/perfil-clinico", { replace: true });
+      if (data?.session?.user) nav("/start", { replace: true });
       else setMsg("Conta criada. Verifique seu e-mail para confirmar e depois faça login.");
     } catch (err) {
       setMsg(err?.message || "Erro ao criar conta.");
@@ -490,7 +332,7 @@ function Login() {
     try {
       const { error } = await supabase.auth.signInWithPassword({ email, password: pass });
       if (error) throw error;
-      nav("/perfil-clinico", { replace: true });
+      nav("/start", { replace: true });
     } catch (err) {
       setMsg(err?.message || "Erro no login.");
     } finally {
@@ -658,7 +500,7 @@ function ClinicalProfile({ session, profile, onProfileSaved }) {
         birth_date: birthDate.trim(),
         state: state.trim(),
       };
-      const fresh = await upsertMyProfile(userId, patch);
+      const fresh = await saveProfileAndReload(userId, patch);
       onProfileSaved(fresh);
       nav("/wizard", { replace: true });
     } catch (err) {
@@ -763,7 +605,7 @@ function Wizard({ session, profile, onProfileSaved }) {
         main_goal: mainGoal,
         main_reason: mainReason,
       };
-      const fresh = await upsertMyProfile(userId, patch);
+      const fresh = await saveProfileAndReload(userId, patch);
       onProfileSaved(fresh);
       nav("/patologias", { replace: true });
     } catch (err) {
@@ -886,8 +728,8 @@ function Patologias({ session, profile, onProfileSaved }) {
     setMsg("");
     try {
       const patch = { conditions: selectedConditions };
-      const fresh = await upsertMyProfile(userId, patch);
-      const nextProfile = fresh || { ...(profile || {}), ...patch };
+      const fresh = await saveProfileAndReload(userId, patch);
+      const nextProfile = fresh ?? { ...(profile || {}), ...patch };
       onProfileSaved(nextProfile);
       nav("/app", { replace: true });
     } catch (err) {
@@ -1695,7 +1537,7 @@ function Perfil({ session, profile, onProfileSaved }) {
         emotional_triage: emotionalTriage,
       };
 
-      const fresh = await upsertMyProfile(userId, patch);
+      const fresh = await saveProfileAndReload(userId, patch);
       onProfileSaved?.(fresh);
       setMsg("✅ Perfil atualizado com sucesso.");
     } catch (err) {
@@ -1904,7 +1746,7 @@ function Perfil({ session, profile, onProfileSaved }) {
                     emotional_triage: emotionalTriage,
                   };
 
-                  const fresh = await upsertMyProfile(userId, patch);
+                  const fresh = await saveProfileAndReload(userId, patch);
                   onProfileSaved?.(fresh);
                   nav("/app", { replace: true });
                 } catch (err) {
@@ -2305,7 +2147,7 @@ function AppHome({ session, profile, onProfileSaved }) {
     setMsg("");
     try {
       // salva a triagem no perfil (você pode trocar o campo depois, mas assim já funciona hoje)
-      const fresh = await upsertMyProfile(userId, { main_goal: titulo });
+      const fresh = await saveProfileAndReload(userId, { main_goal: titulo });
       onProfileSaved(fresh);
       nav("/app/saude", { replace: true });
       setMsg(`✅ Salvo: ${titulo}`);
@@ -2435,7 +2277,7 @@ function HealthTriage({ session, profile, onProfileSaved }) {
     setMsg("");
     try {
       const patch = { health_triage: answers };
-      const fresh = await upsertMyProfile(userId, patch);
+      const fresh = await saveProfileAndReload(userId, patch);
       onProfileSaved(fresh);
       nav("/app/emocional", { replace: true });
     } catch (err) {
@@ -2583,7 +2425,7 @@ function EmotionalTriage({ session, profile, onProfileSaved }) {
     setMsg("");
     try {
       const patch = { emotional_triage: answers };
-      const fresh = await upsertMyProfile(userId, patch);
+      const fresh = await saveProfileAndReload(userId, patch);
       onProfileSaved(fresh);
 
       // Próximo passo: sintomas emocionais multi-seleção.
@@ -2760,7 +2602,7 @@ function EmotionalSymptoms({ session, profile, onProfileSaved }) {
       };
 
       const patch = { emotional_triage: mergedEmo };
-      const fresh = await upsertMyProfile(userId, patch);
+      const fresh = await saveProfileAndReload(userId, patch);
       onProfileSaved(fresh);
 
       // Próximo passo: dashboard do app
@@ -2905,463 +2747,130 @@ function RequireProfileComplete({ session, profile, loadingProfile, profileError
 
 // -------------------- App (carrega session/profile + rotas) --------------------
 export default function App() {
-  const nav = useNavigate();
-  const [authChecked, setAuthChecked] = useState(false);
-
   const [session, setSession] = useState(null);
   const [profile, setProfile] = useState(null);
-
   const [loadingProfile, setLoadingProfile] = useState(false);
   const [profileError, setProfileError] = useState(null);
-
-  const [isAdminFlag, setIsAdminFlag] = useState(false);
-  const [loadingAdmin, setLoadingAdmin] = useState(false);
-
-  const fetchSeqRef = useRef(0);
-  const lastLoadedUserIdRef = useRef(null);
-  const inFlightProfileRef = useRef(null);
-  const signingOutRef = useRef(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
 
-  async function loadProfileFor(userId) {
-    if (!userId) return;
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      setSession(data?.session ?? null);
+    });
 
-    if (lastLoadedUserIdRef.current === userId && profile && !profileError) {
+    const { data: listener } = supabase.auth.onAuthStateChange((_e, s) => {
+      setSession(s);
+    });
+
+    return () => listener?.subscription?.unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    if (!session?.user?.id) {
+      setProfile(null);
       return;
     }
 
-    if (inFlightProfileRef.current?.userId === userId && inFlightProfileRef.current?.promise) {
-      return inFlightProfileRef.current.promise;
-    }
-
-    const seq = ++fetchSeqRef.current;
     setLoadingProfile(true);
-    setProfileError(null);
-
-    const promise = (async () => {
-      try {
-        const p = await fetchMyProfile(userId);
-        if (seq !== fetchSeqRef.current) return;
-        setProfile(p);
-        lastLoadedUserIdRef.current = userId;
-      } catch (err) {
-        if (seq !== fetchSeqRef.current) return;
-        setProfile(null);
-        setProfileError(err);
-      } finally {
-        if (seq !== fetchSeqRef.current) return;
-        setLoadingProfile(false);
-        if (inFlightProfileRef.current?.userId === userId) inFlightProfileRef.current = null;
-      }
-    })();
-
-    inFlightProfileRef.current = { userId, promise };
-    return promise;
-  }
-
-  async function loadAdminFor(userId, sess) {
-    setLoadingAdmin(true);
-    try {
-      const ok = await fetchIsAdmin(userId, sess);
-      setIsAdminFlag(Boolean(ok));
-    } catch {
-      setIsAdminFlag(false);
-    } finally {
-      setLoadingAdmin(false);
-    }
-  }
-
-  useEffect(() => {
-    let unsub = null;
-
-    (async () => {
-      try {
-        const { data } = await supabase.auth.getSession();
-        const sess = data?.session ?? null;
-        setSession(sess);
-        setAuthChecked(true);
-
-        if (sess?.user?.id) {
-          await loadProfileFor(sess.user.id);
-          await loadAdminFor(sess.user.id, sess);
-        } else {
-          lastLoadedUserIdRef.current = null;
-          inFlightProfileRef.current = null;
-          setProfile(null);
-          setProfileError(null);
-          setLoadingProfile(false);
-          setIsAdminFlag(false);
-        }
-      } catch (err) {
-        setSession(null);
-        setProfile(null);
-        setProfileError(err);
-        setLoadingProfile(false);
-        setIsAdminFlag(false);
-        setAuthChecked(true);
-      }
-    })();
-
-    const { data: sub } = supabase.auth.onAuthStateChange(async (_event, newSession) => {
-      setAuthChecked(true);
-      setSession(newSession);
-
-      if (_event === "INITIAL_SESSION") {
-        return;
-      }
-
-      const newUserId = newSession?.user?.id || null;
-
-      if (newUserId) {
-        if (lastLoadedUserIdRef.current !== newUserId) {
-          await loadProfileFor(newUserId);
-        }
-        await loadAdminFor(newUserId, newSession);
-      } else {
-        fetchSeqRef.current++;
-        lastLoadedUserIdRef.current = null;
-        inFlightProfileRef.current = null;
-        setProfile(null);
-        setProfileError(null);
-        setLoadingProfile(false);
-        setIsAdminFlag(false);
-      }
-    });
-
-    unsub = sub?.subscription;
-
-    return () => {
-      fetchSeqRef.current++;
-      lastLoadedUserIdRef.current = null;
-      inFlightProfileRef.current = null;
-      unsub?.unsubscribe?.();
-    };
-  }, []);
+    fetchMyProfile(session.user.id)
+      .then((p) => setProfile(p))
+      .catch((e) => setProfileError(e))
+      .finally(() => setLoadingProfile(false));
+  }, [session]);
 
   async function handleSignOut() {
-    if (signingOutRef.current) return;
-    signingOutRef.current = true;
     setSigningOut(true);
-
-    try {
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
-    } catch (err) {
-      logWarn("signout_error", { message: String(err?.message || err) });
-    } finally {
-      fetchSeqRef.current++;
-      lastLoadedUserIdRef.current = null;
-      inFlightProfileRef.current = null;
-
-      setSession(null);
-      setProfile(null);
-      setProfileError(null);
-      setLoadingProfile(false);
-      setIsAdminFlag(false);
-
-      nav("/auth", { replace: true });
-
-      signingOutRef.current = false;
-      setSigningOut(false);
-      setAuthChecked(true);
-    }
-  }
-
-  if (!authChecked) {
-    return (
-      <div style={styles.page}>
-        <div style={{ maxWidth: 920, margin: "0 auto", padding: "60px 16px" }}>
-          <div style={{ ...styles.card, textAlign: "center" }}>
-            <div style={{ fontWeight: 900, fontSize: 18 }}>Carregando sessão…</div>
-            <div style={{ marginTop: 10, opacity: 0.75 }}>Aguarde um instante.</div>
-          </div>
-        </div>
-      </div>
-    );
+    await supabase.auth.signOut();
+    setSigningOut(false);
+    setSession(null);
+    setProfile(null);
   }
 
   return (
     <Routes>
-      <Route path="/" element={<Navigate to={session?.user ? "/start" : "/auth"} replace />} />
+      <Route path="/" element={<Navigate to={session ? "/start" : "/auth"} replace />} />
 
-      <Route path="/auth" element={session?.user ? <Navigate to="/start" replace /> : <Welcome />} />
-      <Route path="/criar-conta" element={session?.user ? <Navigate to="/start" replace /> : <Signup />} />
-      <Route path="/login" element={session?.user ? <Navigate to="/start" replace /> : <Login />} />
+      <Route path="/auth" element={<Welcome />} />
+      <Route path="/login" element={<Login />} />
+      <Route path="/criar-conta" element={<Signup />} />
 
       <Route
         path="/start"
         element={
-          <RequireAuth session={session}>
-            <ProfileGate
-              session={session}
-              profile={profile}
-              loadingProfile={loadingProfile}
-              profileError={profileError}
-            />
-          </RequireAuth>
+          <ProfileGate
+            session={session}
+            profile={profile}
+            loadingProfile={loadingProfile}
+            profileError={profileError}
+          />
         }
       />
 
       <Route
         path="/perfil-clinico"
         element={
-          <RequireAuth session={session}>
-            <ClinicalProfile session={session} profile={profile} onProfileSaved={setProfile} />
-          </RequireAuth>
+          <ClinicalProfile
+            session={session}
+            profile={profile}
+            onProfileSaved={setProfile}
+          />
         }
       />
 
       <Route
         path="/wizard"
         element={
-          <RequireBasicProfile session={session} profile={profile}>
-            <Wizard session={session} profile={profile} onProfileSaved={setProfile} />
-          </RequireBasicProfile>
+          <Wizard
+            session={session}
+            profile={profile}
+            onProfileSaved={setProfile}
+          />
         }
       />
 
       <Route
         path="/patologias"
         element={
-          <RequireAuth session={session}>
-            <Patologias session={session} profile={profile} onProfileSaved={setProfile} />
-          </RequireAuth>
+          <Patologias
+            session={session}
+            profile={profile}
+            onProfileSaved={setProfile}
+          />
         }
       />
 
       <Route
         path="/app"
         element={
-          <RequireAuth session={session}>
-            <Layout onSignOut={handleSignOut} signingOut={signingOut} />
-          </RequireAuth>
+          <Layout
+            session={session}
+            signingOut={signingOut}
+            onSignOut={handleSignOut}
+          />
         }
       >
-        <Route
-          index
-          element={
-            <RequireProfileComplete
-              session={session}
-              profile={profile}
-              loadingProfile={loadingProfile}
-              profileError={profileError}
-            >
-              <AppDashboard session={session} profile={profile} />
-            </RequireProfileComplete>
-          }
-        />
+        <Route index element={<AppDashboard session={session} profile={profile} />} />
+        <Route path="perfil" element={<Perfil session={session} profile={profile} onProfileSaved={setProfile} />} />
+        <Route path="historico" element={<Historico profile={profile} />} />
+        <Route path="produtos" element={<Produtos />} />
+        <Route path="carrinho" element={<Carrinho />} />
+        <Route path="pagamentos" element={<Pagamentos />} />
+        <Route path="conteudos" element={<Conteudos session={session} isAdmin={isAdmin} />} />
+        <Route path="medicos" element={<Medicos />} />
+        <Route path="receitas" element={<Receitas />} />
+        <Route path="pedidos" element={<Pedidos />} />
+        <Route path="alertas" element={<AlertasUso />} />
 
-        <Route
-          path="objetivos"
-          element={
-            <RequireProfileComplete
-              session={session}
-              profile={profile}
-              loadingProfile={loadingProfile}
-              profileError={profileError}
-            >
-              <AppHome session={session} profile={profile} onProfileSaved={setProfile} />
-            </RequireProfileComplete>
-          }
-        />
-
-        <Route
-          path="saude"
-          element={
-            <RequireProfileComplete
-              session={session}
-              profile={profile}
-              loadingProfile={loadingProfile}
-              profileError={profileError}
-            >
-              <HealthTriage session={session} profile={profile} onProfileSaved={setProfile} />
-            </RequireProfileComplete>
-          }
-        />
-
-        <Route
-          path="emocional"
-          element={
-            <RequireProfileComplete
-              session={session}
-              profile={profile}
-              loadingProfile={loadingProfile}
-              profileError={profileError}
-            >
-              <EmotionalTriage session={session} profile={profile} onProfileSaved={setProfile} />
-            </RequireProfileComplete>
-          }
-        />
-
-        <Route
-          path="emocional/sintomas"
-          element={
-            <RequireProfileComplete
-              session={session}
-              profile={profile}
-              loadingProfile={loadingProfile}
-              profileError={profileError}
-            >
-              <EmotionalSymptoms session={session} profile={profile} onProfileSaved={setProfile} />
-            </RequireProfileComplete>
-          }
-        />
-
-        <Route
-          path="conteudos"
-          element={
-            <RequireProfileComplete
-              session={session}
-              profile={profile}
-              loadingProfile={loadingProfile}
-              profileError={profileError}
-            >
-              <Conteudos session={session} isAdmin={isAdminFlag} />
-            </RequireProfileComplete>
-          }
-        />
-
-        <Route
-          path="medicos"
-          element={
-            <RequireProfileComplete
-              session={session}
-              profile={profile}
-              loadingProfile={loadingProfile}
-              profileError={profileError}
-            >
-              <Medicos />
-            </RequireProfileComplete>
-          }
-        />
-
-        <Route
-          path="receitas"
-          element={
-            <RequireProfileComplete
-              session={session}
-              profile={profile}
-              loadingProfile={loadingProfile}
-              profileError={profileError}
-            >
-              <Receitas />
-            </RequireProfileComplete>
-          }
-        />
-
-        <Route
-          path="pedidos"
-          element={
-            <RequireProfileComplete
-              session={session}
-              profile={profile}
-              loadingProfile={loadingProfile}
-              profileError={profileError}
-            >
-              <Pedidos />
-            </RequireProfileComplete>
-          }
-        />
-
-        <Route
-          path="alertas"
-          element={
-            <RequireProfileComplete
-              session={session}
-              profile={profile}
-              loadingProfile={loadingProfile}
-              profileError={profileError}
-            >
-              <AlertasUso />
-            </RequireProfileComplete>
-          }
-        />
-
-        <Route
-          path="produtos"
-          element={
-            <RequireProfileComplete
-              session={session}
-              profile={profile}
-              loadingProfile={loadingProfile}
-              profileError={profileError}
-            >
-              <Produtos />
-            </RequireProfileComplete>
-          }
-        />
-
-        <Route
-          path="carrinho"
-          element={
-            <RequireProfileComplete
-              session={session}
-              profile={profile}
-              loadingProfile={loadingProfile}
-              profileError={profileError}
-            >
-              <Carrinho />
-            </RequireProfileComplete>
-          }
-        />
-
-        <Route
-          path="pagamentos"
-          element={
-            <RequireProfileComplete
-              session={session}
-              profile={profile}
-              loadingProfile={loadingProfile}
-              profileError={profileError}
-            >
-              <Pagamentos />
-            </RequireProfileComplete>
-          }
-        />
-
-        <Route
-          path="perfil"
-          element={
-            <RequireProfileComplete
-              session={session}
-              profile={profile}
-              loadingProfile={loadingProfile}
-              profileError={profileError}
-            >
-              <Perfil session={session} profile={profile} onProfileSaved={setProfile} />
-            </RequireProfileComplete>
-          }
-        />
-
-        <Route
-          path="historico"
-          element={
-            <RequireProfileComplete
-              session={session}
-              profile={profile}
-              loadingProfile={loadingProfile}
-              profileError={profileError}
-            >
-              <Historico profile={profile} />
-            </RequireProfileComplete>
-          }
-        />
-
-        <Route
-          path="admin/conteudos"
-          element={
-            <RequireAdmin session={session} isAdmin={isAdminFlag}>
-              <AdminContents session={session} />
-            </RequireAdmin>
-          }
-        />
+        <Route path="saude" element={<HealthTriage session={session} profile={profile} onProfileSaved={setProfile} />} />
+        <Route path="emocional" element={<EmotionalTriage session={session} profile={profile} onProfileSaved={setProfile} />} />
+        <Route path="emocional/sintomas" element={<EmotionalSymptoms session={session} profile={profile} onProfileSaved={setProfile} />} />
       </Route>
 
-      <Route path="*" element={<Navigate to={session?.user ? "/start" : "/auth"} replace />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }
-
 // -------------------- Styles --------------------
 const styles = {
   page: {
@@ -3382,6 +2891,8 @@ const styles = {
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
+    flexWrap: "wrap",
+    gap: 10,
   },
   appHeader: {
     display: "flex",
@@ -3489,10 +3000,14 @@ const styles = {
     border: "2px solid rgba(0,0,0,0.12)",
     background: "#fff",
     cursor: "pointer",
+    color: "#111",
+    WebkitTextFillColor: "#111",
   },
   selectBtnActive: {
     border: "2px solid #43a047",
     boxShadow: "0 10px 24px rgba(67, 160, 71, 0.18)",
+    color: "#111",
+    WebkitTextFillColor: "#111",
   },
   pill: {
     padding: "10px 14px",
