@@ -299,6 +299,8 @@ function Login() {
   const [pass, setPass] = useState("");
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState("");
+  const [recoverMsg, setRecoverMsg] = useState("");
+  const [recoverLoading, setRecoverLoading] = useState(false);
 
   async function handleLogin(e) {
     e.preventDefault();
@@ -312,6 +314,25 @@ function Login() {
       setMsg(err?.message || "Erro no login.");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleForgotPassword() {
+    setRecoverMsg("");
+    if (!email) {
+      setRecoverMsg("Informe seu e-mail acima para receber o link de recuperação.");
+      return;
+    }
+
+    setRecoverLoading(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email);
+      if (error) throw error;
+      setRecoverMsg("Verifique seu e-mail para redefinir a senha.");
+    } catch (err) {
+      setRecoverMsg(err?.message || "Erro ao enviar o link de recuperação.");
+    } finally {
+      setRecoverLoading(false);
     }
   }
 
@@ -333,6 +354,47 @@ function Login() {
           </Field>
 
           <button disabled={loading} style={styles.btn}>{loading ? "Entrando..." : "Entrar"}</button>
+          <button
+            type="button"
+            disabled={recoverLoading}
+            onClick={handleForgotPassword}
+            style={{
+              ...styles.btnGhost,
+              marginTop: 6,
+              width: "100%",
+              padding: "10px 18px",
+              borderRadius: 999,
+              fontSize: 14,
+            }}
+          >
+            {recoverLoading ? "Enviando..." : "Esqueci minha senha"}
+          </button>
+          {recoverMsg ? (
+            <p
+              style={{
+                marginTop: 8,
+                color: recoverMsg.startsWith("Erro") ? "#b00020" : "#2e7d32",
+                fontSize: 13,
+              }}
+            >
+              {recoverMsg}
+            </p>
+          ) : null}
+
+          <Link
+            to="/conteudos"
+            style={{
+              ...styles.btnGhost,
+              display: "inline-flex",
+              justifyContent: "center",
+              width: "100%",
+              padding: "10px 18px",
+              borderRadius: 999,
+              marginTop: 6,
+            }}
+          >
+            Entenda mais antes de se cadastrar
+          </Link>
 
           <div style={{ marginTop: 12 }}>
             <Link to="/criar-conta" style={{ color: "#2f5d36", fontWeight: 700, textDecoration: "none" }}>
@@ -974,6 +1036,42 @@ function Conteudos({ session, isAdmin }) {
   );
 }
 
+function PublicConteudos() {
+  return (
+    <div style={{ minHeight: "100vh", background: "#f6f7f8", padding: "24px 16px" }}>
+      <div style={{ maxWidth: 420, margin: "0 auto", display: "grid", gap: 16 }}>
+        <Card>
+          <h2 style={{ marginTop: 0 }}>Conteúdos Gaia</h2>
+          <p style={{ opacity: 0.8 }}>
+            Explore vídeos, e-books e materiais educativos sobre cannabis medicinal sem precisar fazer login.
+          </p>
+          <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
+            <div style={{ padding: 14, borderRadius: 14, border: "1px solid rgba(0,0,0,0.12)", background: "#fff" }}>
+              <div style={{ fontWeight: 900 }}>Vídeo introdutório</div>
+              <div style={{ opacity: 0.75 }}>3 min • Boas práticas para iniciar</div>
+            </div>
+            <div style={{ padding: 14, borderRadius: 14, border: "1px solid rgba(0,0,0,0.12)", background: "#fff" }}>
+              <div style={{ fontWeight: 900 }}>Guia rápido</div>
+              <div style={{ opacity: 0.75 }}>PDF • 5 páginas • Como usar com segurança</div>
+            </div>
+          </div>
+          <Link
+            to="/criar-conta"
+            style={{
+              ...styles.btn,
+              width: "100%",
+              marginTop: 14,
+              justifyContent: "center",
+            }}
+          >
+            Quero cadastrar
+          </Link>
+        </Card>
+      </div>
+    </div>
+  );
+}
+
 function Produtos() {
   const nav = useNavigate();
   const [msg, setMsg] = useState("");
@@ -1348,9 +1446,6 @@ function Perfil({ session, profile, onProfileSaved }) {
 
   const healthFields = useMemo(
     () => [
-      { key: "digestivos", label: "Problemas digestivos", placeholder: "Quanto tempo e quais sintomas?" },
-      { key: "evacuar", label: "Dificuldade para evacuar", placeholder: "Com que frequência? Há quanto tempo?" },
-      { key: "urinar", label: "Dificuldade para urinar", placeholder: "Explique rapidamente" },
       { key: "cabeca_intensa", label: "Dores de cabeça intensas", placeholder: "Frequência e intensidade" },
       { key: "alimentacao", label: "Problemas com alimentação", placeholder: "Quanto tempo, e qual o problema?" },
       { key: "acorda_cansado", label: "Acorda cansado", placeholder: "Com que frequência?" },
@@ -2206,9 +2301,6 @@ function HealthTriage({ session, profile, onProfileSaved }) {
 
   const questions = useMemo(
     () => [
-      { key: "digestivos", label: "Tem problemas digestivos?", placeholder: "Quanto tempo e quais sintomas?" },
-      { key: "evacuar", label: "Tem dificuldades para evacuar?", placeholder: "Com que frequência? Há quanto tempo?" },
-      { key: "urinar", label: "Tem dificuldades para urinar?", placeholder: "Explique rapidamente" },
       { key: "cabeca_intensa", label: "Tem dores de cabeças intensas?", placeholder: "Frequência e intensidade" },
       { key: "alimentacao", label: "Possui problemas com alimentação?", placeholder: "Quanto tempo, e qual o problema?" },
       { key: "acorda_cansado", label: "Acorda cansado?", placeholder: "Com que frequência?" },
@@ -2783,6 +2875,7 @@ export default function App() {
       <Route path="/" element={<Navigate to={session ? "/start" : "/auth"} replace />} />
 
       <Route path="/auth" element={<Welcome />} />
+      <Route path="/conteudos" element={<PublicConteudos />} />
       <Route path="/login" element={<Login />} />
       <Route path="/criar-conta" element={<Signup />} />
 
