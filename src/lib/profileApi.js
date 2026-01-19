@@ -1,37 +1,6 @@
-import { supabase } from "../lib/supabase.js";
-
-const ADMIN_EMAIL_FALLBACK = ["pablo.felix.carvalho@gmail.com"];
-const __warnOnce = new Map();
-
-export function logWarn(key, details) {
-  const now = Date.now();
-  const last = __warnOnce.get(key) || 0;
-  if (now - last < 30000) return;
-  __warnOnce.set(key, now);
-  console.warn(`[GAIA] ${key}`, details || "");
-}
-
-async function withTimeout(promise, ms, msg = "Timeout") {
-  let t;
-  const timeout = new Promise((_, rej) => {
-    t = setTimeout(() => rej(new Error(msg)), ms);
-  });
-  try {
-    return await Promise.race([promise, timeout]);
-  } finally {
-    clearTimeout(t);
-  }
-}
-
-export function normalizeTriage(raw) {
-  const obj = raw && typeof raw === "object" ? raw : {};
-  const out = {};
-  for (const [k, v] of Object.entries(obj)) {
-    if (typeof v === "boolean") out[k] = { on: v, note: "" };
-    else if (v && typeof v === "object") out[k] = { on: Boolean(v.on), note: String(v.note ?? "") };
-  }
-  return out;
-}
+import { supabase } from "./supabase.js";
+import { normalizeTriage } from "./triage.js";
+import { logWarn, sleep, withTimeout } from "./telemetry.js";
 
 export async function fetchMyProfile(userId) {
   const cacheKey = userId ? `gaia.profile.cache:${userId}` : "gaia.profile.cache:anon";
@@ -107,7 +76,7 @@ export async function fetchMyProfile(userId) {
 
       if (!isNetwork || attempt === 2) throw err;
 
-      await new Promise((r) => setTimeout(r, 500 + attempt * 800));
+      await sleep(500 + attempt * 800);
     }
   }
 
@@ -136,33 +105,8 @@ export async function upsertMyProfile(userId, patch) {
         logWarn("profile_upsert_timeout", { userId, attempt });
       }
       if (!isTimeout || attempt === 1) throw err;
-      await new Promise((r) => setTimeout(r, 400));
+      await sleep(400);
     }
   }
   return null;
-}
-
-export async function fetchIsAdmin(userId, session) {
-  if (!userId || !session?.user) return false;
-
-  try {
-    const { data, error } = await supabase
-      .from("app_admins")
-      .select("user_id")
-      .eq("user_id", userId)
-      .maybeSingle();
-
-    if (!error) return Boolean(data?.user_id);
-
-    const msg = String(error?.message || "");
-    if (msg.toLowerCase().includes("does not exist") || msg.toLowerCase().includes("relation")) {
-      const email = (session?.user?.email || "").toLowerCase();
-      return ADMIN_EMAIL_FALLBACK.includes(email);
-    }
-
-    return false;
-  } catch {
-    const email = (session?.user?.email || "").toLowerCase();
-    return ADMIN_EMAIL_FALLBACK.includes(email);
-  }
 }

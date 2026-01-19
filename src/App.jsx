@@ -3,7 +3,10 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Routes, Route, Navigate, Link, useNavigate, Outlet } from "react-router-dom";
 
 import { supabase } from "./lib/supabase.js";
-import { fetchMyProfile, upsertMyProfile, logWarn, normalizeTriage } from "./services/profileService.js";
+import { fetchMyProfile, upsertMyProfile } from "./lib/profileApi.js";
+import { logWarn } from "./lib/telemetry.js";
+import { normalizeTriage, isPersonalComplete, isWizardComplete, hasConditionsSelected, getNextRoute } from "./lib/triage.js";
+import { styles } from "./styles/inlineStyles.js";
 import gaiaIcon from "./assets/gaia-icon.png";
 import Layout from "./components/Layout.jsx";
 
@@ -12,31 +15,6 @@ import Layout from "./components/Layout.jsx";
  * /auth -> /start -> /perfil-clinico -> /wizard -> /patologias -> /app
  */
 
-// -------------------- Regras de completude --------------------
-function isPersonalComplete(p) {
-  return Boolean(p?.full_name && p?.phone && p?.cpf && p?.birth_date);
-}
-function isWizardComplete(p) {
-  return Boolean(p?.age_range && p?.main_goal && p?.main_reason);
-}
-function hasConditionsSelected(p) {
-  return Array.isArray(p?.conditions) && p.conditions.length > 0;
-}
-function isProfileComplete(p) {
-  return isPersonalComplete(p) && isWizardComplete(p) && hasConditionsSelected(p);
-}
-
-function getNextRoute(profile) {
-  // Se não existe linha em `profiles` ainda, o próximo passo é criar o perfil clínico.
-  // Retornar "/auth" aqui gera loop infinito: /start -> /auth -> /start...
-  if (!profile) return "/perfil-clinico";
-  if (!isPersonalComplete(profile)) return "/perfil-clinico";
-  if (!isWizardComplete(profile)) return "/wizard";
-  if (!hasConditionsSelected(profile)) return "/patologias";
-  return "/app";
-}
-
-
 async function saveProfileAndReload(userId, patch) {
   await upsertMyProfile(userId, patch);
   return await fetchMyProfile(userId);
@@ -44,9 +22,6 @@ async function saveProfileAndReload(userId, patch) {
 
 
 // -------------------- Helpers --------------------
-function sleep(ms) {
-  return new Promise((r) => setTimeout(r, ms));
-}
 
 const CART_STORAGE_KEY = "gaia.cart.items";
 
@@ -2747,6 +2722,7 @@ function RequireProfileComplete({ session, profile, loadingProfile, profileError
 
 // -------------------- App (carrega session/profile + rotas) --------------------
 export default function App() {
+  const navigate = useNavigate();
   const [session, setSession] = useState(null);
   const [profile, setProfile] = useState(null);
   const [loadingProfile, setLoadingProfile] = useState(false);
@@ -2780,11 +2756,26 @@ export default function App() {
   }, [session]);
 
   async function handleSignOut() {
+    if (signingOut) return;
+
     setSigningOut(true);
-    await supabase.auth.signOut();
-    setSigningOut(false);
-    setSession(null);
-    setProfile(null);
+    let timeoutId;
+    try {
+      await Promise.race([
+        supabase.auth.signOut(),
+        new Promise((_, reject) => {
+          timeoutId = setTimeout(() => reject(new Error("Supabase timeout ao sair")), 5000);
+        }),
+      ]);
+    } catch (err) {
+      logWarn("signout_error", { message: String(err?.message || err) });
+    } finally {
+      if (timeoutId) clearTimeout(timeoutId);
+      setSession(null);
+      setProfile(null);
+      setSigningOut(false);
+      navigate("/auth", { replace: true });
+    }
   }
 
   return (
@@ -2871,151 +2862,3 @@ export default function App() {
     </Routes>
   );
 }
-// -------------------- Styles --------------------
-const styles = {
-  page: {
-    minHeight: "100vh",
-    background: "#f6f7f8",
-    fontFamily:
-      'ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif',
-    color: "#111",
-  },
-  topbar: {
-    position: "sticky",
-    top: 0,
-    zIndex: 10,
-    background: "rgba(246,247,248,0.9)",
-    backdropFilter: "blur(8px)",
-    borderBottom: "1px solid rgba(0,0,0,0.08)",
-    padding: "14px 18px",
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    flexWrap: "wrap",
-    gap: 10,
-  },
-  appHeader: {
-    display: "flex",
-    alignItems: "center",
-    gap: 12,
-  },
-  appLogo: {
-    width: 36,
-    height: 36,
-  },
-  appTitle: {
-    fontSize: 18,
-    fontWeight: 600,
-    lineHeight: "20px",
-  },
-  appSubtitle: {
-    fontSize: 12,
-    opacity: 0.7,
-  },
-  authPage: {
-    minHeight: "100vh",
-    background: "#e9efe8",
-    padding: "16px 12px",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  authCard: {
-    width: "100%",
-    maxWidth: 420,
-    margin: "0 auto",
-    background: "#fff",
-    borderRadius: 18,
-    padding: 18,
-    border: "1px solid rgba(0,0,0,0.08)",
-    boxShadow: "0 10px 30px rgba(0,0,0,0.08)",
-    boxSizing: "border-box",
-    minHeight: "82vh",
-    display: "flex",
-    flexDirection: "column",
-    justifyContent: "center",
-    alignItems: "stretch",
-  },
-  authTitle: {
-    margin: "10px 0 6px",
-    fontSize: 22,
-    color: "#2f5d36",
-  },
-  authSubtitle: {
-    margin: 0,
-    fontSize: 13,
-    opacity: 0.75,
-  },
-  logoDot: { width: 18, height: 18, borderRadius: 6, background: "#2e7d32" },
-  container: {
-    maxWidth: 420,
-    width: "100%",
-    boxSizing: "border-box",
-    margin: "0 auto",
-    padding: "16px 12px 28px",
-  },
-  card: {
-    background: "#fff",
-    border: "1px solid rgba(0,0,0,0.08)",
-    borderRadius: 16,
-    padding: 16,
-    boxShadow: "0 10px 30px rgba(0,0,0,0.06)",
-    width: "100%",
-    boxSizing: "border-box",
-    overflow: "hidden",
-  },
-  input: {
-    width: "100%",
-    padding: "12px 14px",
-    borderRadius: 12,
-    border: "1px solid rgba(0,0,0,0.15)",
-    outline: "none",
-    fontSize: 14,
-  },
-  btn: {
-    background: "#43a047",
-    color: "#fff",
-    border: "none",
-    padding: "12px 18px",
-    borderRadius: 999,
-    fontWeight: 800,
-    cursor: "pointer",
-  },
-  btnGhost: {
-    background: "transparent",
-    color: "#111",
-    border: "1px solid rgba(0,0,0,0.2)",
-    padding: "12px 18px",
-    borderRadius: 999,
-    fontWeight: 800,
-    cursor: "pointer",
-  },
-  choiceGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12 },
-  choiceGrid2: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12 },
-  selectBtn: {
-    textAlign: "left",
-    width: "100%",
-    padding: 16,
-    borderRadius: 16,
-    border: "2px solid rgba(0,0,0,0.12)",
-    background: "#fff",
-    cursor: "pointer",
-    color: "#111",
-    WebkitTextFillColor: "#111",
-  },
-  selectBtnActive: {
-    border: "2px solid #43a047",
-    boxShadow: "0 10px 24px rgba(67, 160, 71, 0.18)",
-    color: "#111",
-    WebkitTextFillColor: "#111",
-  },
-  pill: {
-    padding: "10px 14px",
-    borderRadius: 999,
-    border: "1px solid rgba(0,0,0,0.2)",
-    background: "#fff",
-    cursor: "pointer",
-    fontWeight: 700,
-  },
-  pillActive: { border: "1px solid #43a047", background: "rgba(67,160,71,0.10)" },
-};
