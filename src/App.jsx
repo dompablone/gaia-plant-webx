@@ -7,7 +7,8 @@ import { fetchMyProfile, upsertMyProfile } from "./lib/profileApi.js";
 import { logWarn } from "./lib/telemetry.js";
 import { normalizeTriage, isPersonalComplete, isWizardComplete, hasConditionsSelected, getNextRoute } from "./lib/triage.js";
 import { styles } from "./styles/inlineStyles.js";
-import gaiaIcon from "./assets/gaia-icon.png";
+
+const GAIA_ICON = "/gaia-icon.png";
 import Layout from "./components/Layout.jsx";
 
 /**
@@ -51,7 +52,7 @@ function Header({ userEmail, onSignOut, signingOut }) {
     <div style={styles.topbar} className="gaia-topbar">
       <div style={styles.appHeader} onClick={() => nav("/")}>
         <img
-          src={gaiaIcon}
+          src={GAIA_ICON}
           alt="Gaia Plant"
           style={{
             width: "clamp(56px, 14vw, 88px)",
@@ -218,7 +219,7 @@ function Welcome() {
     <div style={{ maxWidth: 360, margin: "0 auto" }}>
       <Card>
         <div style={{ textAlign: "center" }}>
-          <img src={gaiaIcon} alt="Gaia Plant" style={{ width: 288, height: 288, marginBottom: 10 }} />
+          <img src={GAIA_ICON} alt="Gaia Plant" style={{ width: 288, height: 288, marginBottom: 10 }} />
           <h1 style={{ margin: 0, fontSize: 24 }}>Gaia Plant</h1>
           <p style={{ opacity: 0.75, marginTop: 8 }}>
             Faça login ou crie uma conta para continuar.
@@ -265,7 +266,7 @@ function Signup() {
     <div style={styles.authPage}>
       <div style={styles.authCard}>
         <div style={{ textAlign: "center", marginBottom: 12 }}>
-          <img src={gaiaIcon} alt="Gaia Plant" style={{ width: 240, height: 240 }} />
+          <img src={GAIA_ICON} alt="Gaia Plant" style={{ width: 240, height: 240 }} />
           <h2 style={styles.authTitle}>Criar conta</h2>
           <p style={styles.authSubtitle}>Preencha seus dados para começar.</p>
         </div>
@@ -340,7 +341,7 @@ function Login() {
     <div style={styles.authPage}>
       <div style={styles.authCard}>
         <div style={{ textAlign: "center", marginBottom: 12 }}>
-          <img src={gaiaIcon} alt="Gaia Plant" style={{ width: 240, height: 240 }} />
+          <img src={GAIA_ICON} alt="Gaia Plant" style={{ width: 240, height: 240 }} />
           <h2 style={styles.authTitle}>Login</h2>
           <p style={styles.authSubtitle}>Acesse sua conta para continuar.</p>
         </div>
