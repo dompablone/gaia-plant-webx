@@ -233,6 +233,9 @@ function Welcome() {
           <Link to="/login" style={{ ...styles.btnGhost, textDecoration: "none", display: "inline-block" }}>
             Já tenho conta
           </Link>
+          <Link to="/conteudos" style={{ ...styles.btnGhost, textDecoration: "none", display: "inline-block" }}>
+            Entenda mais antes de se cadastrar
+          </Link>
         </div>
       </Card>
     </div>
@@ -327,7 +330,8 @@ function Login() {
 
     setRecoverLoading(true);
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email);
+      const redirectTo = `${window.location.origin}/reset-password`;
+      const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
       if (error) throw error;
       setRecoverMsg("Verifique seu e-mail para redefinir a senha.");
     } catch (err) {
@@ -410,46 +414,159 @@ function Login() {
   );
 }
 
+function ResetPassword() {
+  const nav = useNavigate();
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [linkError, setLinkError] = useState("");
+  const [formError, setFormError] = useState("");
+  const [loadingLink, setLoadingLink] = useState(true);
+  const [formReady, setFormReady] = useState(false);
+  const [processing, setProcessing] = useState(false);
+
+  useEffect(() => {
+    const hash = window?.location?.hash ?? "";
+    const params = new URLSearchParams(hash.replace(/^#/, ""));
+    const access_token = params.get("access_token");
+    const refresh_token = params.get("refresh_token");
+    const type = params.get("type");
+
+    if (!access_token || !refresh_token || type !== "recovery") {
+      setLinkError("Link inválido ou expirado. Solicite novamente.");
+      setLoadingLink(false);
+      return;
+    }
+
+    supabase.auth
+      .setSession({ access_token, refresh_token })
+      .then(({ error }) => {
+        if (error) {
+          setLinkError("Não foi possível validar o link. Solicite novamente.");
+          return;
+        }
+        setFormReady(true);
+      })
+      .catch(() => {
+        setLinkError("Não foi possível validar o link. Solicite novamente.");
+      })
+      .finally(() => {
+        setLoadingLink(false);
+        const cleanUrl = window.location.pathname + window.location.search;
+        if (window?.history?.replaceState) {
+          window.history.replaceState(null, document.title, cleanUrl);
+        }
+      });
+  }, []);
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    if (!formReady || processing) return;
+
+    setFormError("");
+
+    if (password.length < 8) {
+      setFormError("A senha precisa ter pelo menos 8 caracteres.");
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setFormError("As senhas não coincidem.");
+      return;
+    }
+
+    setProcessing(true);
+    try {
+      const { error } = await supabase.auth.updateUser({ password });
+      if (error) throw error;
+      await supabase.auth.signOut();
+      nav("/login", { replace: true });
+    } catch (err) {
+      setFormError(err?.message || "Não foi possível atualizar a senha.");
+    } finally {
+      setProcessing(false);
+    }
+  }
+
+  return (
+    <div style={styles.authPage}>
+      <div style={styles.authCard}>
+        <h2 style={{ marginTop: 0, fontSize: 28 }}>Redefinir senha</h2>
+        <p style={{ marginTop: 6, opacity: 0.75 }}>Digite uma nova senha para voltar a acessar sua conta.</p>
+
+        {loadingLink && !linkError ? (
+          <p style={{ marginTop: 12, opacity: 0.8 }}>Validando link...</p>
+        ) : linkError ? (
+          <p style={{ marginTop: 12, color: "#b00020" }}>{linkError}</p>
+        ) : (
+          <form onSubmit={handleSubmit}>
+            <Field label="Nova senha">
+              <Input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Mínimo de 8 caracteres"
+              />
+            </Field>
+
+            <Field label="Confirmar senha">
+              <Input
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+              />
+            </Field>
+
+            {formError ? (
+              <p style={{ marginTop: 12, color: "#b00020" }}>{formError}</p>
+            ) : null}
+
+            <div style={{ marginTop: 18, display: "flex", gap: 10 }}>
+              <button
+                type="submit"
+                disabled={
+                  processing ||
+                  !formReady ||
+                  password.length < 8 ||
+                  password !== confirmPassword
+                }
+                style={styles.btn}
+              >
+                {processing ? "Atualizando..." : "Atualizar senha"}
+              </button>
+            </div>
+          </form>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // -------------------- Gate /start (ProfileGate isolado) --------------------
 function ProfileGate({ session, profile, loadingProfile, profileError }) {
   const nav = useNavigate();
+  const lastTargetRef = useRef(null);
+  const userId = session?.user?.id;
 
   useEffect(() => {
     if (loadingProfile) return;
 
-    // Sem sessão: manda para auth
-    if (!session?.user) {
+    if (!userId) {
+      lastTargetRef.current = "/auth";
       nav("/auth", { replace: true });
       return;
     }
 
     if (profileError) {
-      // OFFLINE OK: tenta usar o cache local do último perfil salvo
-      try {
-        const uid = session?.user?.id;
-        if (uid) {
-          const cacheKey = `gaia.profile.cache:${uid}`;
-          const cached = localStorage.getItem(cacheKey);
-          if (cached) {
-            const cachedProfile = JSON.parse(cached);
-            logWarn("profile_gate_offline_cache", { uid });
-            nav(getNextRoute(cachedProfile), { replace: true });
-            return;
-          }
-        }
-      } catch (e) {
-        // se o cache estiver inválido, apenas cai para a UI de erro abaixo
-        logWarn("profile_gate_cache_parse_error", { message: String(e?.message || e) });
-      }
-
-      // Não redireciona automaticamente para /auth.
-      // Mantém a tela de erro com botões (Tentar novamente / Ir para login).
       logWarn("profile_gate_error", { message: String(profileError?.message || profileError) });
       return;
     }
 
-    nav(getNextRoute(profile), { replace: true });
-  }, [session, profile, loadingProfile, profileError, nav]);
+    const target = getNextRoute(profile);
+    if (!target || target === lastTargetRef.current) return;
+
+    lastTargetRef.current = target;
+    nav(target, { replace: true });
+  }, [loadingProfile, userId, profile, profileError, nav]);
 
   if (loadingProfile) {
     return (
@@ -490,6 +607,7 @@ function ClinicalProfile({ session, profile, onProfileSaved }) {
 
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState("");
+  const [cpfError, setCpfError] = useState("");
 
   const [fullName, setFullName] = useState(profile?.full_name ?? "");
   const [phone, setPhone] = useState(profile?.phone ?? "+55 ");
@@ -523,20 +641,97 @@ function ClinicalProfile({ session, profile, onProfileSaved }) {
     return out;
   }
 
+  function digitsOnly(value) {
+    return String(value || "").replace(/\D/g, "");
+  }
+
+  function isValidCPF(cpfValue) {
+    const cpfDigits = digitsOnly(cpfValue);
+    if (cpfDigits.length !== 11) return false;
+    if (/^(\d)\1{10}$/.test(cpfDigits)) return false;
+
+    const calcCheck = (base, factor) => {
+      let sum = 0;
+      for (let i = 0; i < base.length; i++) sum += parseInt(base[i], 10) * (factor - i);
+      const mod = (sum * 10) % 11;
+      return mod === 10 ? 0 : mod;
+    };
+
+    const base9 = cpfDigits.slice(0, 9);
+    const d1 = calcCheck(base9, 10);
+    const base10 = cpfDigits.slice(0, 10);
+    const d2 = calcCheck(base10, 11);
+
+    return d1 === parseInt(cpfDigits[9], 10) && d2 === parseInt(cpfDigits[10], 10);
+  }
+
+  function isValidPhone(phoneValue) {
+    return digitsOnly(phoneValue).length >= 10;
+  }
+
+  function isValidBirthDateBR(value) {
+    const s = String(value || "").trim();
+    if (!/^\d{2}\/\d{2}\/\d{4}$/.test(s)) return false;
+    const [dd, mm, yyyy] = s.split("/").map((x) => parseInt(x, 10));
+    if (!dd || !mm || !yyyy) return false;
+    if (yyyy < 1900 || yyyy > new Date().getFullYear()) return false;
+    if (mm < 1 || mm > 12) return false;
+    const lastDay = new Date(yyyy, mm, 0).getDate();
+    if (dd < 1 || dd > lastDay) return false;
+    return true;
+  }
+
+  function handleCpfBlur() {
+    if (!cpf) {
+      setCpfError("");
+      return;
+    }
+    setCpfError(isValidCPF(cpf) ? "" : "CPF inválido.");
+  }
+
   async function handleSave(e) {
     e.preventDefault();
     if (saving) return;
 
-    setSaving(true);
     setMsg("");
+    setCpfError("");
 
+    const nameValue = String(fullName || "").trim();
+    if (!nameValue) {
+      setMsg("Informe seu nome completo.");
+      return;
+    }
+
+    if (!isValidPhone(phone)) {
+      setMsg("Telefone inválido (coloque DDD).");
+      return;
+    }
+
+    if (!isValidCPF(cpf)) {
+      setCpfError("CPF inválido.");
+      return;
+    }
+
+    const birthValue = String(birthDate || "").trim();
+    if (!birthValue || !isValidBirthDateBR(birthValue)) {
+      setMsg("Data inválida (DD/MM/AAAA).");
+      return;
+    }
+
+    const stateValue = String(state || "").trim();
+    if (!stateValue) {
+      setMsg("Informe o estado.");
+      return;
+    }
+
+    setSaving(true);
     try {
       const patch = {
-        full_name: fullName.trim(),
+        full_name: nameValue,
         phone: String(phone || "").replace(/[^0-9+\s()-]/g, "").trim(),
-        cpf: String(cpf || "").replace(/\D/g, "").trim(),
-        birth_date: birthDate.trim(),
-        state: state.trim(),
+        cpf: digitsOnly(cpf),
+        birth_date: birthValue,
+        state: stateValue,
       };
       const fresh = await saveProfileAndReload(userId, patch);
       onProfileSaved(fresh);
@@ -566,7 +761,17 @@ function ClinicalProfile({ session, profile, onProfileSaved }) {
           </Field>
 
           <Field label="CPF">
-            <Input value={cpf} onChange={(e) => setCpf(formatCPF(e.target.value))} />
+            <Input
+              value={cpf}
+              onChange={(e) => {
+                setCpf(formatCPF(e.target.value));
+                if (cpfError) setCpfError("");
+              }}
+              onBlur={handleCpfBlur}
+            />
+            {cpfError ? (
+              <p style={{ marginTop: 4, fontSize: 12, color: "#b00020" }}>{cpfError}</p>
+            ) : null}
           </Field>
 
           <Field label="Data de Nascimento">
@@ -589,7 +794,11 @@ function ClinicalProfile({ session, profile, onProfileSaved }) {
           </Field>
 
           <div style={{ marginTop: 18, display: "flex", gap: 10 }}>
-            <button type="submit" disabled={saving} style={styles.btn}>
+            <button
+              type="submit"
+              disabled={saving || Boolean(cpfError) || digitsOnly(cpf).length !== 11}
+              style={styles.btn}
+            >
               {saving ? "Salvando..." : "Próximo"}
             </button>
           </div>
@@ -753,8 +962,21 @@ function Patologias({ session, profile, onProfileSaved }) {
   );
 
   useEffect(() => {
-    if (profile && !isPersonalComplete(profile)) nav("/perfil-clinico", { replace: true });
-    if (profile && !isWizardComplete(profile)) nav("/wizard", { replace: true });
+    if (!profile) return;
+
+    if (!isPersonalComplete(profile)) {
+      nav("/perfil-clinico", { replace: true });
+      return;
+    }
+
+    if (!isWizardComplete(profile)) {
+      nav("/wizard", { replace: true });
+      return;
+    }
+
+    if (hasConditionsSelected(profile)) {
+      nav("/app", { replace: true });
+    }
   }, [profile, nav]);
 
   function toggle(item) {
@@ -2878,6 +3100,7 @@ export default function App() {
       <Route path="/auth" element={<Welcome />} />
       <Route path="/conteudos" element={<PublicConteudos />} />
       <Route path="/login" element={<Login />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/criar-conta" element={<Signup />} />
 
       <Route
