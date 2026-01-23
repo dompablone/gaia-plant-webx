@@ -1535,6 +1535,37 @@ const EMOTIONAL_FIELDS = [
   { key: "diagnostico_ans_depr", label: "Já teve diagnóstico de ansiedade ou depressão?", placeholder: "Há quanto tempo?" },
 ];
 
+const TriageNote = React.memo(function TriageNote({ initialValue, placeholder, disabled, onCommit }) {
+  const ref = useRef(null);
+  const latestRef = useRef(initialValue || "");
+
+  // If the stored value changes externally, update the textarea ONLY when it's not focused
+  useEffect(() => {
+    latestRef.current = initialValue || "";
+    const el = ref.current;
+    if (!el) return;
+    if (document.activeElement === el) return;
+    el.value = latestRef.current;
+  }, [initialValue]);
+
+  return (
+    <textarea
+      ref={ref}
+      defaultValue={initialValue || ""}
+      onChange={(e) => {
+        latestRef.current = e.target.value;
+      }}
+      onBlur={() => onCommit(latestRef.current)}
+      placeholder={placeholder}
+      disabled={disabled}
+      rows={3}
+      className={`${INPUT_CLASS} resize-none`}
+      onMouseDown={(e) => e.stopPropagation()}
+      onClick={(e) => e.stopPropagation()}
+    />
+  );
+});
+
 function TriageEditor({ title, subtitle, fields, value, onToggle, onNote, saving }) {
   return (
     <Card>
@@ -1590,16 +1621,11 @@ function TriageEditor({ title, subtitle, fields, value, onToggle, onNote, saving
 
               {active ? (
                 <div style={{ marginTop: 10 }}>
-                  <textarea
-                    value={row.note || ""}
-                    onChange={(e) => onNote(f.key, e.target.value)}
+                  <TriageNote
+                    initialValue={row.note || ""}
                     placeholder={f.placeholder}
                     disabled={saving}
-                    rows={3}
-                    className={`${INPUT_CLASS} resize-none`}
-                    onMouseDown={(e) => e.stopPropagation()}
-                    onClick={(e) => e.stopPropagation()}
-                    onKeyDown={(e) => e.stopPropagation()}
+                    onCommit={(txt) => onNote(f.key, txt)}
                   />
                   <div style={{ marginTop: 6, opacity: 0.7, fontSize: 12 }}>Você pode detalhar o máximo que quiser.</div>
                 </div>

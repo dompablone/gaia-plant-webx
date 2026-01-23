@@ -6,6 +6,10 @@ export default function PerfilClinico() {
   const nav = useNavigate();
   const [busy, setBusy] = useState(false);
   const [profile, setProfile] = useState(null);
+  const [fullName, setFullName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [cpf, setCpf] = useState("");
+  const [birthDate, setBirthDate] = useState("");
 
   useEffect(() => {
     (async () => {
@@ -19,7 +23,12 @@ export default function PerfilClinico() {
         .eq("id", user.id)
         .maybeSingle();
 
-      setProfile(data ?? { id: user.id, email: user.email ?? null });
+      const profileData = data ?? { id: user.id, email: user.email ?? null };
+      setProfile(profileData);
+      setFullName(profileData.full_name ?? "");
+      setPhone(profileData.phone ?? "");
+      setCpf(profileData.cpf ?? "");
+      setBirthDate(profileData.birth_date ?? "");
     })();
   }, []);
 
@@ -28,13 +37,15 @@ export default function PerfilClinico() {
     setBusy(true);
 
     try {
-      const { error } = await supabase
-        .from("profiles")
-        .update({
-          ...profile,
-          profile_completed: true,
-        })
-        .eq("id", profile.id);
+      const patch = {
+        full_name: fullName,
+        phone,
+        cpf,
+        birth_date: birthDate,
+        profile_completed: true,
+      };
+
+      const { error } = await supabase.from("profiles").update(patch).eq("id", profile.id);
 
       if (error) throw error;
 
@@ -66,26 +77,26 @@ export default function PerfilClinico() {
         }}
       >
         <input
-          value={profile.full_name ?? ""}
-          onChange={(e) => setProfile({ ...profile, full_name: e.target.value })}
+          value={fullName}
+          onChange={(e) => setFullName(e.target.value)}
           placeholder="Nome completo"
           style={{ padding: 12, borderRadius: 12, border: "1px solid rgba(0,0,0,0.14)" }}
         />
         <input
-          value={profile.phone ?? ""}
-          onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
+          value={phone}
+          onChange={(e) => setPhone(e.target.value)}
           placeholder="Telefone (+55...)"
           style={{ padding: 12, borderRadius: 12, border: "1px solid rgba(0,0,0,0.14)" }}
         />
         <input
-          value={profile.cpf ?? ""}
-          onChange={(e) => setProfile({ ...profile, cpf: e.target.value })}
+          value={cpf}
+          onChange={(e) => setCpf(e.target.value)}
           placeholder="CPF"
           style={{ padding: 12, borderRadius: 12, border: "1px solid rgba(0,0,0,0.14)" }}
         />
         <input
-          value={profile.birth_date ?? ""}
-          onChange={(e) => setProfile({ ...profile, birth_date: e.target.value })}
+          value={birthDate}
+          onChange={(e) => setBirthDate(e.target.value)}
           placeholder="Data de nascimento (DD/MM/AAAA)"
           style={{ padding: 12, borderRadius: 12, border: "1px solid rgba(0,0,0,0.14)" }}
         />
