@@ -1,5 +1,5 @@
 // src/App.jsx
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Routes, Route, Navigate, Link, useNavigate } from "react-router-dom";
 
 import { supabase } from "./lib/supabase.js";
@@ -676,22 +676,6 @@ function Wizard({ session, profile, onProfileSaved }) {
   const [mainGoal, setMainGoal] = useState(profile?.main_goal ?? "");
   const [mainReason, setMainReason] = useState(profile?.main_reason ?? "");
 
-  const goals = useMemo(
-    () => [
-      { key: "Melhora do Sono", sub: "Ajuda para dormir e manter o descanso." },
-      { key: "Mais Calma", sub: "Controle da agitação e do nervosismo diário." },
-      { key: "Aumento do Foco", sub: "Mais concentração nas suas atividades." },
-      { key: "Menos Estresse", sub: "Melhora do estresse e exaustão diária." },
-      { key: "Controle da Ansiedade", sub: "Busca por mais equilíbrio emocional." },
-      { key: "Dor Crônica", sub: "Alívio de dores constantes." },
-      { key: "Melhora no Esporte", sub: "Mais energia e menos fadiga muscular." },
-      { key: "Aumento da Libido", sub: "Recupere a sensação de prazer." },
-      { key: "Enxaqueca", sub: "Alívio para dores de cabeça fortes." },
-      { key: "Controle da TPM", sub: "Controle para mudanças de humor e irritação." },
-    ],
-    []
-  );
-
   useEffect(() => {
     if (profile && !isPersonalComplete(profile)) nav("/perfil-clinico", { replace: true });
     if (profile && isWizardComplete(profile)) nav("/patologias", { replace: true });
@@ -742,7 +726,7 @@ function Wizard({ session, profile, onProfileSaved }) {
 
       <h3 style={{ margin: "0 0 8px" }}>Objetivos mais procurados</h3>
       <div style={styles.choiceGrid2}>
-        {goals.map((g) => (
+        {GOALS.map((g) => (
           <SelectButton
             key={g.key}
             className="gp-card-link"
@@ -795,31 +779,6 @@ function Patologias({ session, profile, onProfileSaved }) {
   const [msg, setMsg] = useState("");
   const [selectedConditions, setSelectedConditions] = useState(() => profile?.conditions ?? []);
 
-  const conditions = useMemo(
-    () => [
-      "Ansiedade",
-      "Insónia / Distúrbios do sono",
-      "Dor crónica",
-      "Fibromialgia",
-      "Enxaqueca",
-      "Depressão",
-      "Stress / Burnout",
-      "TDAH (foco e atenção)",
-      "Epilepsia / Convulsões",
-      "Espasticidade (ex: Esclerose Múltipla)",
-      "Náusea e vómitos (ex: quimioterapia)",
-      "Apetite baixo / Caquexia",
-      "Dor neuropática",
-      "Inflamação crónica",
-      "Artrite",
-      "TPM intensa",
-      "TEPT (stress pós-traumático)",
-      "Autismo (suporte de sintomas)",
-      "Glaucoma (casos específicos)",
-    ],
-    []
-  );
-
   useEffect(() => {
     if (!profile) return;
 
@@ -865,7 +824,7 @@ function Patologias({ session, profile, onProfileSaved }) {
         <p style={{ marginTop: 6, opacity: 0.75 }}>Selecione uma ou mais opções.</p>
 
         <div style={styles.choiceGrid2}>
-          {conditions.map((c) => (
+          {CONDITIONS_OPTIONS.map((c) => (
             <SelectButton
               key={c}
               className="gp-card-link"
@@ -1535,6 +1494,65 @@ const EMOTIONAL_FIELDS = [
   { key: "diagnostico_ans_depr", label: "Já teve diagnóstico de ansiedade ou depressão?", placeholder: "Há quanto tempo?" },
 ];
 
+const GOALS = [
+  { key: "Melhora do Sono", sub: "Ajuda para dormir e manter o descanso." },
+  { key: "Mais Calma", sub: "Controle da agitação e do nervosismo diário." },
+  { key: "Aumento do Foco", sub: "Mais concentração nas suas atividades." },
+  { key: "Menos Estresse", sub: "Melhora do estresse e exaustão diária." },
+  { key: "Controle da Ansiedade", sub: "Busca por mais equilíbrio emocional." },
+  { key: "Dor Crônica", sub: "Alívio de dores constantes." },
+  { key: "Melhora no Esporte", sub: "Mais energia e menos fadiga muscular." },
+  { key: "Aumento da Libido", sub: "Recupere a sensação de prazer." },
+  { key: "Enxaqueca", sub: "Alívio para dores de cabeça fortes." },
+  { key: "Controle da TPM", sub: "Controle para mudanças de humor e irritação." },
+];
+
+const GOAL_TITLES = GOALS.map((goal) => goal.key);
+
+const CONDITIONS_OPTIONS = [
+  "Ansiedade",
+  "Insónia / Distúrbios do sono",
+  "Dor crónica",
+  "Fibromialgia",
+  "Enxaqueca",
+  "Depressão",
+  "Stress / Burnout",
+  "TDAH (foco e atenção)",
+  "Epilepsia / Convulsões",
+  "Espasticidade (ex: Esclerose Múltipla)",
+  "Náusea e vómitos (ex: quimioterapia)",
+  "Apetite baixo / Caquexia",
+  "Dor neuropática",
+  "Inflamação crónica",
+  "Artrite",
+  "TPM intensa",
+  "TEPT (stress pós-traumático)",
+  "Autismo (suporte de sintomas)",
+  "Glaucoma (casos específicos)",
+];
+
+const OBJECTIVES = GOALS.map((goal) => ({
+  titulo: goal.key,
+  descricao: goal.sub,
+}));
+
+const EMOTIONAL_SYMPTOM_OPTIONS = [
+  "Ansiedade",
+  "Crises de pânico",
+  "Tristeza constante",
+  "Irritabilidade",
+  "Falta de motivação",
+  "Dificuldade de concentração",
+  "Pensamentos acelerados",
+  "Oscilação de humor",
+  "Sensação de vazio",
+  "Estresse elevado",
+  "Dificuldade para dormir",
+  "Pesadelos / sono agitado",
+  "Apetite alterado",
+  "Isolamento social",
+];
+
 const TriageNote = React.memo(function TriageNote({ initialValue, placeholder, disabled, onCommit }) {
   const ref = useRef(null);
   const latestRef = useRef(initialValue || "");
@@ -1662,86 +1680,6 @@ function Perfil({ session, profile, onProfileSaved }) {
   // -------------------- Triagens (editáveis) --------------------
   const [healthTriage, setHealthTriage] = useState(() => normalizeTriage(profile?.health_triage));
   const [emotionalTriage, setEmotionalTriage] = useState(() => normalizeTriage(profile?.emotional_triage));
-
-  const goalOptions = useMemo(
-    () => [
-      "Melhora do Sono",
-      "Mais Calma",
-      "Aumento do Foco",
-      "Menos Estresse",
-      "Controle da Ansiedade",
-      "Dor Crônica",
-      "Melhora no Esporte",
-      "Aumento da Libido",
-      "Enxaqueca",
-      "Controle da TPM",
-    ],
-    []
-  );
-
-  const conditions = useMemo(
-    () => [
-      "Ansiedade",
-      "Insónia / Distúrbios do sono",
-      "Dor crónica",
-      "Fibromialgia",
-      "Enxaqueca",
-      "Depressão",
-      "Stress / Burnout",
-      "TDAH (foco e atenção)",
-      "Epilepsia / Convulsões",
-      "Espasticidade (ex: Esclerose Múltipla)",
-      "Náusea e vómitos (ex: quimioterapia)",
-      "Apetite baixo / Caquexia",
-      "Dor neuropática",
-      "Inflamação crónica",
-      "Artrite",
-      "TPM intensa",
-      "TEPT (stress pós-traumático)",
-      "Autismo (suporte de sintomas)",
-      "Glaucoma (casos específicos)",
-    ],
-    []
-  );
-
-  const healthFields = useMemo(
-    () => [
-      { key: "cabeca_intensa", label: "Dores de cabeça intensas", placeholder: "Frequência e intensidade" },
-      { key: "alimentacao", label: "Problemas com alimentação", placeholder: "Quanto tempo, e qual o problema?" },
-      { key: "acorda_cansado", label: "Acorda cansado", placeholder: "Com que frequência?" },
-      { key: "fuma", label: "Tabaco (você fuma?)", placeholder: "Com que frequência?" },
-      { key: "alcool", label: "Bebida alcoólica", placeholder: "Frequência e tipo de bebida" },
-      { key: "ja_usou_cannabis", label: "Já usou cannabis", placeholder: "Com que frequência? Há quanto tempo?" },
-      { key: "arritmia", label: "Arritmia cardíaca", placeholder: "Detalhe (se souber)" },
-      { key: "psicose", label: "Histórico de psicose/esquizofrenia", placeholder: "Explique brevemente" },
-      { key: "tratamento_atual", label: "Faz algum tratamento", placeholder: "Qual tratamento?" },
-      { key: "usa_remedios", label: "Uso frequente de remédios", placeholder: "Quais e com que frequência?" },
-      { key: "doenca_cronica", label: "Doença crônica", placeholder: "Qual?" },
-      { key: "cirurgia", label: "Cirurgia anterior", placeholder: "Qual e quando?" },
-      { key: "alergia", label: "Alergia", placeholder: "Qual alergia?" },
-    ],
-    []
-  );
-
-  const emotionalFields = useMemo(
-    () => [
-      { key: "tristeza", label: "Tristeza", placeholder: "Com qual frequência e motivo?" },
-      { key: "foco", label: "Perda de foco", placeholder: "Especifique" },
-      { key: "memoria", label: "Memória", placeholder: "Há quanto tempo e qual intensidade?" },
-      { key: "irritado_triste", label: "Irritabilidade / tristeza", placeholder: "Com que frequência?" },
-      { key: "estresse", label: "Estresse", placeholder: "Quais os motivos?" },
-      { key: "panico", label: "Episódios de pânico", placeholder: "Com que frequência e há quanto tempo?" },
-      { key: "diagnostico_psicose", label: "Diagnóstico de psicose", placeholder: "Há quanto tempo?" },
-      { key: "familia_psicose", label: "Parente com psicose", placeholder: "Qual parente?" },
-      { key: "diagnostico_ans_depr", label: "Diagnóstico ansiedade/depressão", placeholder: "Há quanto tempo?" },
-      {
-        key: "sintomas_emocionais",
-        label: "Sintomas emocionais (seleção)",
-        placeholder: "Ex: Ansiedade, sensação de vazio, estresse elevado...",
-      },
-    ],
-    []
-  );
 
   useEffect(() => {
     setFullName(profile?.full_name ?? "");
@@ -1958,7 +1896,7 @@ function Perfil({ session, profile, onProfileSaved }) {
               style={{ ...styles.input, appearance: "auto" }}
             >
               <option value="">—</option>
-              {goalOptions.map((g) => (
+              {GOAL_TITLES.map((g) => (
                 <option key={g} value={g}>{g}</option>
               ))}
             </select>
@@ -1967,7 +1905,7 @@ function Perfil({ session, profile, onProfileSaved }) {
           <Field label="Condições selecionadas">
             <div className="gaia-force-text">
               <div style={styles.choiceGrid2}>
-                {conditions.map((c) => (
+                {CONDITIONS_OPTIONS.map((c) => (
                   <SelectButton
                     key={c}
                     className="gp-card-link"
@@ -2039,7 +1977,7 @@ function Perfil({ session, profile, onProfileSaved }) {
       <TriageEditor
         title="Triagem de saúde"
         subtitle="Toque em um item para ativar/desativar. Quando ativo, você pode escrever detalhes abaixo."
-        fields={healthFields}
+        fields={HEALTH_FIELDS}
         value={healthTriage}
         onToggle={(k) => () => toggleTriage(setHealthTriage, k)}
         onNote={(k, v) => setTriageNote(setHealthTriage, k, v)}
@@ -2049,7 +1987,7 @@ function Perfil({ session, profile, onProfileSaved }) {
       <TriageEditor
         title="Triagem emocional"
         subtitle="Escolha o que faz sentido e detalhe quando quiser."
-        fields={emotionalFields}
+        fields={EMOTIONAL_FIELDS}
         value={emotionalTriage}
         onToggle={(k) => () => toggleTriage(setEmotionalTriage, k)}
         onNote={(k, v) => setTriageNote(setEmotionalTriage, k, v)}
@@ -2412,22 +2350,6 @@ function AppHome({ session, profile, onProfileSaved }) {
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState("");
 
-  const objetivos = useMemo(
-    () => [
-      { titulo: "Melhora do Sono", descricao: "Ajuda para dormir e manter o descanso." },
-      { titulo: "Mais Calma", descricao: "Controle da agitação e do nervosismo diário." },
-      { titulo: "Aumento do Foco", descricao: "Mais concentração nas suas atividades." },
-      { titulo: "Menos Estresse", descricao: "Melhora do estresse e exaustão diária." },
-      { titulo: "Controle da Ansiedade", descricao: "Busca por mais equilíbrio emocional." },
-      { titulo: "Dor Crônica", descricao: "Alívio de dores constantes." },
-      { titulo: "Melhora no Esporte", descricao: "Mais energia e menos fadiga muscular." },
-      { titulo: "Aumento da Libido", descricao: "Recupere a sensação de prazer." },
-      { titulo: "Enxaqueca", descricao: "Alívio para dores de cabeça fortes." },
-      { titulo: "Controle da TPM", descricao: "Controle para mudanças de humor e irritação." },
-    ],
-    []
-  );
-
   async function handlePickGoal(titulo) {
     setSaving(true);
     setMsg("");
@@ -2455,7 +2377,7 @@ function AppHome({ session, profile, onProfileSaved }) {
         <h3 style={{ marginTop: 0, color: "#2e7d32" }}>Objetivos Mais Procurados</h3>
 
         <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
-          {objetivos.map((item) => {
+          {OBJECTIVES.map((item) => {
             const active = profile?.main_goal === item.titulo;
             return (
               <button
@@ -2667,26 +2589,6 @@ function EmotionalSymptoms({ session, profile, onProfileSaved }) {
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState("");
 
-  const options = useMemo(
-    () => [
-      "Ansiedade",
-      "Crises de pânico",
-      "Tristeza constante",
-      "Irritabilidade",
-      "Falta de motivação",
-      "Dificuldade de concentração",
-      "Pensamentos acelerados",
-      "Oscilação de humor",
-      "Sensação de vazio",
-      "Estresse elevado",
-      "Dificuldade para dormir",
-      "Pesadelos / sono agitado",
-      "Apetite alterado",
-      "Isolamento social",
-    ],
-    []
-  );
-
   const [selected, setSelected] = useState(() => {
     const saved = normalizeTriage(profile?.emotional_triage)?.sintomas_emocionais?.note || "";
     const listPart = saved.split("|")[0].trim();
@@ -2761,7 +2663,7 @@ function EmotionalSymptoms({ session, profile, onProfileSaved }) {
       <Card>
         <div className="gaia-force-text">
           <div style={styles.choiceGrid2}>
-            {options.map((opt) => (
+            {EMOTIONAL_SYMPTOM_OPTIONS.map((opt) => (
               <SelectButton
                 key={opt}
                 className="gp-card-link"
@@ -2872,11 +2774,17 @@ export default function App() {
   const [loadingProfile, setLoadingProfile] = useState(false);
   const [profileError, setProfileError] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [sessionLoading, setSessionLoading] = useState(true);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data?.session ?? null);
-    });
+    supabase.auth
+      .getSession()
+      .then(({ data }) => {
+        setSession(data?.session ?? null);
+      })
+      .finally(() => {
+        setSessionLoading(false);
+      });
 
     const { data: listener } = supabase.auth.onAuthStateChange((_e, s) => {
       setSession(s);
@@ -2898,83 +2806,95 @@ export default function App() {
       .finally(() => setLoadingProfile(false));
   }, [session]);
 
+  if (sessionLoading) {
+    return (
+      <>
+        <div style={{ color: "red", padding: 20 }}>APP MONTADO</div>
+        <div style={{ padding: 12, color: "#2f5d36" }}>Carregando…</div>
+      </>
+    );
+  }
+
   return (
-    <Routes>
-      <Route element={<PhoneFrameLayout />}>
-        <Route path="/" element={<Navigate to={session ? "/start" : "/auth"} replace />} />
+    <>
+      <div style={{ color: "red", padding: 20 }}>APP MONTADO</div>
+      <Routes>
+        <Route element={<PhoneFrameLayout />}>
+          <Route path="/" element={<Navigate to={session ? "/start" : "/auth"} replace />} />
 
-        <Route path="/auth" element={<Welcome />} />
-        <Route path="/conteudos" element={<PublicConteudos />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/reset-password" element={<ResetPassword />} />
-        <Route path="/criar-conta" element={<Signup />} />
+          <Route path="/auth" element={<Welcome />} />
+          <Route path="/conteudos" element={<PublicConteudos />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/criar-conta" element={<Signup />} />
 
-        <Route
-          path="/start"
-          element={
-            <ProfileGate
-              session={session}
-              profile={profile}
-              loadingProfile={loadingProfile}
-              profileError={profileError}
-            />
-          }
-        />
+          <Route
+            path="/start"
+            element={
+              <ProfileGate
+                session={session}
+                profile={profile}
+                loadingProfile={loadingProfile}
+                profileError={profileError}
+              />
+            }
+          />
 
-        <Route
-          path="/perfil-clinico"
-          element={
-            <ClinicalProfile
-              session={session}
-              profile={profile}
-              onProfileSaved={setProfile}
-            />
-          }
-        />
+          <Route
+            path="/perfil-clinico"
+            element={
+              <ClinicalProfile
+                session={session}
+                profile={profile}
+                onProfileSaved={setProfile}
+              />
+            }
+          />
 
-        <Route
-          path="/wizard"
-          element={
-            <Wizard
-              session={session}
-              profile={profile}
-              onProfileSaved={setProfile}
-            />
-          }
-        />
+          <Route
+            path="/wizard"
+            element={
+              <Wizard
+                session={session}
+                profile={profile}
+                onProfileSaved={setProfile}
+              />
+            }
+          />
 
-        <Route
-          path="/patologias"
-          element={
-            <Patologias
-              session={session}
-              profile={profile}
-              onProfileSaved={setProfile}
-            />
-          }
-        />
-      </Route>
-
-      <Route element={<Layout />}>
-        <Route path="/app">
-          <Route index element={<AppDashboard session={session} profile={profile} />} />
-          <Route path="perfil" element={<Perfil session={session} profile={profile} onProfileSaved={setProfile} />} />
-          <Route path="historico" element={<Historico profile={profile} />} />
-          <Route path="produtos" element={<Produtos />} />
-          <Route path="carrinho" element={<Carrinho />} />
-          <Route path="pagamentos" element={<Pagamentos />} />
-          <Route path="conteudos" element={<Conteudos session={session} isAdmin={isAdmin} />} />
-          <Route path="medicos" element={<Medicos />} />
-          <Route path="receitas" element={<Receitas />} />
-          <Route path="pedidos" element={<Pedidos />} />
-          <Route path="alertas" element={<AlertasUso />} />
-          <Route path="saude" element={<HealthTriage session={session} profile={profile} onProfileSaved={setProfile} />} />
-          <Route path="emocional" element={<EmotionalTriage session={session} profile={profile} onProfileSaved={setProfile} />} />
-          <Route path="emocional/sintomas" element={<EmotionalSymptoms session={session} profile={profile} onProfileSaved={setProfile} />} />
+          <Route
+            path="/patologias"
+            element={
+              <Patologias
+                session={session}
+                profile={profile}
+                onProfileSaved={setProfile}
+              />
+            }
+          />
         </Route>
-      </Route>
 
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+        <Route element={<Layout />}>
+          <Route path="/app">
+            <Route index element={<AppDashboard session={session} profile={profile} />} />
+            <Route path="perfil" element={<Perfil session={session} profile={profile} onProfileSaved={setProfile} />} />
+            <Route path="historico" element={<Historico profile={profile} />} />
+            <Route path="produtos" element={<Produtos />} />
+            <Route path="carrinho" element={<Carrinho />} />
+            <Route path="pagamentos" element={<Pagamentos />} />
+            <Route path="conteudos" element={<Conteudos session={session} isAdmin={isAdmin} />} />
+            <Route path="medicos" element={<Medicos />} />
+            <Route path="receitas" element={<Receitas />} />
+            <Route path="pedidos" element={<Pedidos />} />
+            <Route path="alertas" element={<AlertasUso />} />
+            <Route path="saude" element={<HealthTriage session={session} profile={profile} onProfileSaved={setProfile} />} />
+            <Route path="emocional" element={<EmotionalTriage session={session} profile={profile} onProfileSaved={setProfile} />} />
+            <Route path="emocional/sintomas" element={<EmotionalSymptoms session={session} profile={profile} onProfileSaved={setProfile} />} />
+          </Route>
+        </Route>
+
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </>
   );
 }

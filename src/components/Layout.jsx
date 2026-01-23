@@ -7,7 +7,7 @@ import GAIA_ICON from "../assets/gaia-icon.png";
 export function PhoneFrameLayout({ children }) {
   return (
     <div className="min-h-screen bg-neutral-50">
-      <div className="mx-auto w-full max-w-md px-4">{children}</div>
+      <div className="mx-auto w-full max-w-md px-4">{children ?? <Outlet />}</div>
     </div>
   );
 }
