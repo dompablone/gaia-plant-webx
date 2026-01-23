@@ -1,6 +1,6 @@
 // src/App.jsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Routes, Route, Navigate, Link, useNavigate, Outlet } from "react-router-dom";
+import { Routes, Route, Navigate, Link, useNavigate } from "react-router-dom";
 
 import { supabase } from "./lib/supabase.js";
 import { fetchMyProfile, upsertMyProfile } from "./lib/profileApi.js";
@@ -9,7 +9,13 @@ import { normalizeTriage, isPersonalComplete, isWizardComplete, hasConditionsSel
 import { styles } from "./styles/inlineStyles.js";
 
 const GAIA_ICON = "/gaia-icon.png";
-import Layout from "./components/Layout.jsx";
+const PRIMARY_BUTTON_CLASS =
+  "rounded-full bg-emerald-600 text-white font-semibold px-4 py-2 transition active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed";
+const GHOST_BUTTON_CLASS =
+  "rounded-full border border-neutral-300 bg-white px-4 py-2 font-semibold hover:bg-neutral-100 transition";
+const INPUT_CLASS =
+  "w-full rounded-xl border border-neutral-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500";
+import Layout, { PhoneFrameLayout } from "./components/Layout.jsx";
 
 /**
  * FLUXO (OFICIAL)
@@ -44,172 +50,31 @@ function writeCart(items) {
   }
 }
 
-// -------------------- UI Base --------------------
-function Header({ userEmail, onSignOut, signingOut }) {
-  const nav = useNavigate();
-
+function Card({ children, className = "" }) {
   return (
-    <div style={styles.topbar} className="gaia-topbar">
-      <div style={styles.appHeader} onClick={() => nav("/")}>
-        <img
-          src={GAIA_ICON}
-          alt="Gaia Plant"
-          style={{
-            width: "clamp(56px, 14vw, 88px)",
-            height: "clamp(56px, 14vw, 88px)",
-            marginRight: 12,
-          }}
-        />
-        <div>
-          <div style={styles.appTitle} className="gaia-topbar-title">
-            Gaia Plant
-          </div>
-          <div style={styles.appSubtitle} className="gaia-topbar-sub">
-            Cannabis Medicinal
-          </div>
-        </div>
-      </div>
-
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 10,
-          flexWrap: "wrap",
-          justifyContent: "flex-end",
-        }}
-      >
-        {userEmail ? (
-          <>
-            <span style={{ fontSize: 12, opacity: 0.75 }}>{userEmail}</span>
-            <Link
-              to="/app/pagamentos"
-              style={{
-                ...styles.btnGhost,
-                textDecoration: "none",
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-                width: 44,
-                height: 36,
-                borderRadius: 999,
-              }}
-              aria-label="Abrir pagamentos"
-              title="Pagamentos"
-              className="gaia-topbar-btn"
-            >
-              🛒
-            </Link>
-            <button
-              type="button"
-              onClick={onSignOut}
-              disabled={Boolean(signingOut)}
-              style={{
-                ...styles.btnGhost,
-                opacity: signingOut ? 0.7 : 1,
-                cursor: signingOut ? "not-allowed" : "pointer",
-              }}
-              className="gaia-topbar-btn"
-            >
-              {signingOut ? "Saindo..." : "Sair"}
-            </button>
-          </>
-        ) : null}
-      </div>
-    </div>
-  );
-}
-
-function Shell({ session, children, onSignOut, signingOut }) {
-  return (
-    <div style={styles.page}>
-      <Header userEmail={session?.user?.email ?? ""} onSignOut={onSignOut} signingOut={signingOut} />
-      <div style={styles.container}>{children}</div>
-    </div>
-  );
-}
-
-function AppLayout({ session, signingOut, onSignOut }) {
-  return (
-    <Shell session={session} signingOut={signingOut} onSignOut={onSignOut}>
-      <Outlet />
-    </Shell>
-  );
-}
-
-function Card({ children }) {
-  return (
-    <div style={styles.card} className="gaia-force-text">
+    <div className={`rounded-2xl bg-white border border-neutral-200 shadow-sm p-4 gaia-force-text ${className}`}>
       {children}
     </div>
   );
 }
 
-function GlobalLoading({ title = "Carregando…", subtitle = "", onRetry, onGoLogin }) {
-  const [elapsed, setElapsed] = useState(0);
-
-  useEffect(() => {
-    const t = setInterval(() => setElapsed((s) => s + 1), 1000);
-    return () => clearInterval(t);
-  }, []);
-
-  const isSlow = elapsed >= 10;
-
-  return (
-    <Card>
-      <div style={{ fontWeight: 900, fontSize: 18, marginBottom: 6 }}>{title}</div>
-      <div style={{ opacity: 0.75, fontSize: 13 }}>
-        {subtitle ||
-          (isSlow
-            ? "Está demorando mais que o normal. Pode ser instabilidade de rede."
-            : "Aguarde um instante…")}
-      </div>
-
-      {isSlow ? (
-        <div style={{ display: "flex", gap: 10, marginTop: 14, flexWrap: "wrap" }}>
-          {onRetry ? (
-            <button type="button" style={styles.btn} onClick={onRetry}>
-              Tentar novamente
-            </button>
-          ) : null}
-
-          {onGoLogin ? (
-            <button type="button" style={styles.btnGhost} onClick={onGoLogin}>
-              Ir para login
-            </button>
-          ) : null}
-        </div>
-      ) : null}
-
-      <div style={{ marginTop: 10, opacity: 0.6, fontSize: 12 }}>Tempo: {elapsed}s</div>
-    </Card>
-  );
-}
-
 function Field({ label, children }) {
   return (
-    <div style={{ marginBottom: 14 }}>
-      <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 6 }}>{label}</div>
+    <div className="mb-3">
+      <div className="text-xs font-semibold uppercase tracking-wide text-neutral-500 mb-1">{label}</div>
       {children}
     </div>
   );
 }
 
 function Input(props) {
-  return <input {...props} style={{ ...styles.input, ...(props.style || {}) }} />;
-}
-
-function SelectButton({ active, title, subtitle, onClick, className = "" }) {
+  const { className = "", style, ...rest } = props;
   return (
-    <button
-      className={className}
-      type="button"
-      onClick={onClick}
-      style={{ ...styles.selectBtn, ...(active ? styles.selectBtnActive : {}) }}
-    >
-      <div style={{ fontWeight: 800, fontSize: 18 }}>{title}</div>
-      {subtitle ? <div style={{ marginTop: 6, opacity: 0.8 }}>{subtitle}</div> : null}
-    </button>
+    <input
+      {...rest}
+      style={style}
+      className={`${INPUT_CLASS} ${className}`}
+    />
   );
 }
 
@@ -226,14 +91,14 @@ function Welcome() {
           </p>
         </div>
 
-        <div style={{ display: "flex", gap: 10, marginTop: 16, flexWrap: "wrap", justifyContent: "center" }}>
-          <Link to="/criar-conta" style={{ ...styles.btn, textDecoration: "none", display: "inline-block" }}>
+        <div className="flex flex-wrap gap-2 justify-center mt-4">
+          <Link to="/criar-conta" className={`${PRIMARY_BUTTON_CLASS} inline-flex items-center justify-center no-underline`}>
             Criar conta
           </Link>
-          <Link to="/login" style={{ ...styles.btnGhost, textDecoration: "none", display: "inline-block" }}>
+          <Link to="/login" className={`${GHOST_BUTTON_CLASS} inline-flex items-center justify-center no-underline`}>
             Já tenho conta
           </Link>
-          <Link to="/conteudos" style={{ ...styles.btnGhost, textDecoration: "none", display: "inline-block" }}>
+          <Link to="/conteudos" className={`${GHOST_BUTTON_CLASS} inline-flex items-center justify-center no-underline`}>
             Entenda mais antes de se cadastrar
           </Link>
         </div>
@@ -282,7 +147,9 @@ function Signup() {
             <Input type="password" value={pass} onChange={(e) => setPass(e.target.value)} autoComplete="new-password" />
           </Field>
 
-          <button disabled={loading} style={styles.btn}>{loading ? "Criando..." : "Criar conta"}</button>
+          <button disabled={loading} className={`${PRIMARY_BUTTON_CLASS} w-full`}>
+            {loading ? "Criando..." : "Criar conta"}
+          </button>
 
           <div style={{ marginTop: 12 }}>
             <Link to="/login" style={{ color: "#2f5d36", fontWeight: 700, textDecoration: "none" }}>
@@ -358,19 +225,14 @@ function Login() {
             <Input type="password" value={pass} onChange={(e) => setPass(e.target.value)} autoComplete="current-password" />
           </Field>
 
-          <button disabled={loading} style={styles.btn}>{loading ? "Entrando..." : "Entrar"}</button>
+          <button disabled={loading} className={`${PRIMARY_BUTTON_CLASS} w-full`}>
+            {loading ? "Entrando..." : "Entrar"}
+          </button>
           <button
             type="button"
             disabled={recoverLoading}
             onClick={handleForgotPassword}
-            style={{
-              ...styles.btnGhost,
-              marginTop: 6,
-              width: "100%",
-              padding: "10px 18px",
-              borderRadius: 999,
-              fontSize: 14,
-            }}
+            className={`${GHOST_BUTTON_CLASS} mt-2 w-full text-sm`}
           >
             {recoverLoading ? "Enviando..." : "Esqueci minha senha"}
           </button>
@@ -388,15 +250,7 @@ function Login() {
 
           <Link
             to="/conteudos"
-            style={{
-              ...styles.btnGhost,
-              display: "inline-flex",
-              justifyContent: "center",
-              width: "100%",
-              padding: "10px 18px",
-              borderRadius: 999,
-              marginTop: 6,
-            }}
+            className={`${GHOST_BUTTON_CLASS} inline-flex items-center justify-center w-full mt-2 text-sm no-underline`}
           >
             Entenda mais antes de se cadastrar
           </Link>
@@ -520,7 +374,7 @@ function ResetPassword() {
               <p style={{ marginTop: 12, color: "#b00020" }}>{formError}</p>
             ) : null}
 
-            <div style={{ marginTop: 18, display: "flex", gap: 10 }}>
+            <div className="flex gap-2 mt-4">
               <button
                 type="submit"
                 disabled={
@@ -529,7 +383,7 @@ function ResetPassword() {
                   password.length < 8 ||
                   password !== confirmPassword
                 }
-                style={styles.btn}
+                className={`${PRIMARY_BUTTON_CLASS} w-full`}
               >
                 {processing ? "Atualizando..." : "Atualizar senha"}
               </button>
@@ -793,11 +647,11 @@ function ClinicalProfile({ session, profile, onProfileSaved }) {
             </select>
           </Field>
 
-          <div style={{ marginTop: 18, display: "flex", gap: 10 }}>
+          <div className="flex gap-2 mt-4">
             <button
               type="submit"
               disabled={saving || Boolean(cpfError) || digitsOnly(cpf).length !== 11}
-              style={styles.btn}
+              className={`${PRIMARY_BUTTON_CLASS} w-full`}
             >
               {saving ? "Salvando..." : "Próximo"}
             </button>
@@ -916,8 +770,13 @@ function Wizard({ session, profile, onProfileSaved }) {
         ))}
       </div>
 
-      <div style={{ marginTop: 18, display: "flex", gap: 10 }}>
-        <button disabled={saving || !canContinue} style={{ ...styles.btn, opacity: saving || !canContinue ? 0.6 : 1 }} onClick={handleSave} type="button">
+      <div className="flex gap-2 mt-4">
+        <button
+          disabled={saving || !canContinue}
+          onClick={handleSave}
+          type="button"
+          className={`${PRIMARY_BUTTON_CLASS} w-full ${saving || !canContinue ? "opacity-60 cursor-not-allowed" : ""}`}
+        >
           {saving ? "Salvando..." : "Continuar"}
         </button>
       </div>
@@ -1017,11 +876,19 @@ function Patologias({ session, profile, onProfileSaved }) {
           ))}
         </div>
 
-        <div style={{ marginTop: 18, display: "flex", gap: 10, flexWrap: "wrap" }}>
-          <button type="button" style={styles.btnGhost} onClick={() => nav("/app", { replace: true })}>
+        <div className="flex flex-wrap gap-2 mt-4">
+          <button
+            type="button"
+            onClick={() => nav("/app", { replace: true })}
+            className={GHOST_BUTTON_CLASS}
+          >
             Voltar
           </button>
-          <button disabled={saving || selectedConditions.length === 0} style={styles.btn} onClick={handleSave}>
+          <button
+            disabled={saving || selectedConditions.length === 0}
+            onClick={handleSave}
+            className={`${PRIMARY_BUTTON_CLASS} flex-1`}
+          >
             {saving ? "Salvando..." : "Salvar e continuar"}
           </button>
         </div>
@@ -1116,15 +983,33 @@ function AppDashboard({ session, profile }) {
 
         <div style={{ display: "grid", gap: 10, marginTop: 12 }}>
           {!profile?.main_goal ? (
-            <button type="button" style={styles.btn} onClick={() => nav("/app/objetivos")}>Definir objetivo</button>
+            <button
+              type="button"
+              className={`${PRIMARY_BUTTON_CLASS} w-full text-left`}
+              onClick={() => nav("/app/objetivos")}
+            >
+              Definir objetivo
+            </button>
           ) : null}
 
           {!hasHealth ? (
-            <button type="button" style={styles.btn} onClick={() => nav("/app/saude")}>Responder triagem de saúde</button>
+            <button
+              type="button"
+              className={`${PRIMARY_BUTTON_CLASS} w-full text-left`}
+              onClick={() => nav("/app/saude")}
+            >
+              Responder triagem de saúde
+            </button>
           ) : null}
 
           {hasHealth && !hasEmotional ? (
-            <button type="button" style={styles.btn} onClick={() => nav("/app/emocional")}>Responder triagem emocional</button>
+            <button
+              type="button"
+              className={`${PRIMARY_BUTTON_CLASS} w-full text-left`}
+              onClick={() => nav("/app/emocional")}
+            >
+              Responder triagem emocional
+            </button>
           ) : null}
 
           {hasHealth && hasEmotional ? (
@@ -1233,7 +1118,13 @@ function Conteudos({ session, isAdmin }) {
           </div>
 
           {admin ? (
-            <button type="button" style={styles.btn} onClick={() => nav("/app/admin/conteudos")}>Admin</button>
+            <button
+              type="button"
+              className={`${PRIMARY_BUTTON_CLASS} w-full`}
+              onClick={() => nav("/app/admin/conteudos")}
+            >
+              Admin
+            </button>
           ) : null}
         </div>
       </Card>
@@ -1280,12 +1171,7 @@ function PublicConteudos() {
           </div>
           <Link
             to="/criar-conta"
-            style={{
-              ...styles.btn,
-              width: "100%",
-              marginTop: 14,
-              justifyContent: "center",
-            }}
+            className={`${PRIMARY_BUTTON_CLASS} inline-flex items-center justify-center w-full mt-3`}
           >
             Quero cadastrar
           </Link>
@@ -1343,11 +1229,15 @@ function Produtos() {
           Selecione o tipo de óleo e a concentração desejada.
         </p>
 
-        <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 12 }}>
-          <button type="button" style={styles.btnGhost} onClick={() => nav("/app")}>
+        <div className="flex flex-wrap gap-2 mt-3">
+          <button type="button" onClick={() => nav("/app")} className={GHOST_BUTTON_CLASS}>
             Voltar
           </button>
-          <button type="button" style={styles.btn} onClick={() => nav("/app/carrinho")}>
+          <button
+            type="button"
+            onClick={() => nav("/app/carrinho")}
+            className={`${PRIMARY_BUTTON_CLASS} flex-1`}
+          >
             Ver carrinho
           </button>
         </div>
@@ -1461,15 +1351,23 @@ function Carrinho() {
           {items.length === 0 ? "Nenhum item selecionado ainda." : "Itens selecionados."}
         </p>
 
-        <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 12 }}>
-          <button type="button" style={styles.btn} onClick={() => nav("/app/produtos")}>
+        <div className="flex flex-wrap gap-2 mt-3">
+          <button
+            type="button"
+            className={`${PRIMARY_BUTTON_CLASS} flex-1`}
+            onClick={() => nav("/app/produtos")}
+          >
             Clique aqui para ver nossos produtos
           </button>
-          <button type="button" style={styles.btnGhost} onClick={() => nav("/app/pagamentos")}>
+          <button
+            type="button"
+            className={GHOST_BUTTON_CLASS}
+            onClick={() => nav("/app/pagamentos")}
+          >
             Ir para pagamentos
           </button>
           {items.length > 0 ? (
-            <button type="button" style={styles.btnGhost} onClick={clearCart}>
+            <button type="button" className={GHOST_BUTTON_CLASS} onClick={clearCart}>
               Limpar carrinho
             </button>
           ) : null}
@@ -1537,7 +1435,7 @@ function Medicos() {
                 {doc.specialty} • {doc.city}
               </div>
             </div>
-            <button type="button" style={styles.btn}>Abrir chat</button>
+            <button type="button" className={PRIMARY_BUTTON_CLASS}>Abrir chat</button>
           </div>
         ))}
       </div>
@@ -1558,7 +1456,11 @@ function Receitas() {
       <p style={{ opacity: 0.8, lineHeight: 1.5 }}>
         Clique abaixo para iniciar sua consulta com um profissional credenciado.
       </p>
-      <button type="button" style={styles.btn} onClick={() => nav("/app/medicos")}>
+      <button
+        type="button"
+        className={`${PRIMARY_BUTTON_CLASS} w-full mt-3`}
+        onClick={() => nav("/app/medicos")}
+      >
         Continuar passo a passo
       </button>
     </Card>
@@ -1577,7 +1479,11 @@ function Pedidos() {
       <p style={{ opacity: 0.8, lineHeight: 1.5 }}>
         Caso ainda não tenha pedido, explore nossos produtos para iniciar.
       </p>
-      <button type="button" style={styles.btn} onClick={() => nav("/app/produtos")}>
+      <button
+        type="button"
+        className={`${PRIMARY_BUTTON_CLASS} w-full mt-3`}
+        onClick={() => nav("/app/produtos")}
+      >
         Ver produtos
       </button>
     </Card>
@@ -1597,6 +1503,111 @@ function AlertasUso() {
         orientação. Em caso de efeitos adversos, procure assistência médica.
       </p>
       <p style={{ fontWeight: 800, marginTop: 12 }}>MANTENHA FORA DO ALCANCE DE CRIANÇAS.</p>
+    </Card>
+  );
+}
+
+const HEALTH_FIELDS = [
+  { key: "cabeca_intensa", label: "Dores de cabeça intensas", placeholder: "Frequência e intensidade" },
+  { key: "alimentacao", label: "Problemas com alimentação", placeholder: "Quanto tempo, e qual o problema?" },
+  { key: "acorda_cansado", label: "Acorda cansado?", placeholder: "Com que frequência?" },
+  { key: "fuma", label: "Você fuma?", placeholder: "Com que frequência?" },
+  { key: "alcool", label: "Uso de bebidas alcoólicas", placeholder: "Frequência e tipo de bebida" },
+  { key: "ja_usou_cannabis", label: "Já usou cannabis?", placeholder: "Com que frequência? Há quanto tempo?" },
+  { key: "arritmia", label: "Possui arritmia cardíaca?", placeholder: "Detalhe (se souber)" },
+  { key: "psicose", label: "Histórico de psicose / esquizofrenia?", placeholder: "Explique brevemente" },
+  { key: "tratamento_atual", label: "Faz algum tratamento?", placeholder: "Qual tratamento?" },
+  { key: "usa_remedios", label: "Uso frequente de remédios?", placeholder: "Quais e com que frequência?" },
+  { key: "doenca_cronica", label: "Possui doença crônica?", placeholder: "Qual?" },
+  { key: "cirurgia", label: "Fez alguma cirurgia?", placeholder: "Qual e quando?" },
+  { key: "alergia", label: "Possui alergia?", placeholder: "Qual alergia?" },
+];
+
+const EMOTIONAL_FIELDS = [
+  { key: "tristeza", label: "Sente tristeza constante?", placeholder: "Com qual frequência e motivo?" },
+  { key: "foco", label: "Perde o foco facilmente?", placeholder: "Especifique" },
+  { key: "memoria", label: "Tem problemas de memória?", placeholder: "Há quanto tempo e intensidade?" },
+  { key: "irritado_triste", label: "Fica irritado ou triste facilmente?", placeholder: "Com que frequência?" },
+  { key: "estresse", label: "Tem problemas com estresse?", placeholder: "Quais os motivos?" },
+  { key: "panico", label: "Já teve episódios de pânico?", placeholder: "Frequência e há quanto tempo?" },
+  { key: "diagnostico_psicose", label: "Teve diagnóstico de esquizofrenia ou psicose?", placeholder: "Há quanto tempo?" },
+  { key: "familia_psicose", label: "Parente próximo com esquizofrenia ou psicose?", placeholder: "Qual parente?" },
+  { key: "diagnostico_ans_depr", label: "Já teve diagnóstico de ansiedade ou depressão?", placeholder: "Há quanto tempo?" },
+];
+
+function TriageEditor({ title, subtitle, fields, value, onToggle, onNote, saving }) {
+  return (
+    <Card>
+      <h3 style={{ marginTop: 0 }}>{title}</h3>
+      {subtitle ? <p style={{ opacity: 0.75, marginTop: 6 }}>{subtitle}</p> : null}
+
+      <div style={{ display: "grid", gap: 12, marginTop: 12 }}>
+        {fields.map((f) => {
+          const row = value?.[f.key] ?? { on: false, note: "" };
+          const active = Boolean(row.on);
+
+          return (
+            <div
+              key={f.key}
+              style={{
+                padding: 14,
+                borderRadius: 16,
+                border: "1px solid rgba(0,0,0,0.12)",
+                background: "#fff",
+              }}
+            >
+              <button
+                type="button"
+                onClick={onToggle(f.key)}
+                disabled={saving}
+                style={{
+                  width: "100%",
+                  textAlign: "left",
+                  border: active ? "2px solid #43a047" : "2px solid rgba(0,0,0,0.12)",
+                  borderRadius: 14,
+                  padding: 14,
+                  background: active ? "rgba(67,160,71,0.08)" : "#fff",
+                  cursor: saving ? "not-allowed" : "pointer",
+                }}
+                aria-pressed={active}
+              >
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
+                  <div style={{ fontWeight: 900, fontSize: 16 }}>{f.label}</div>
+                  <div
+                    style={{
+                      padding: "6px 10px",
+                      borderRadius: 999,
+                      fontSize: 12,
+                      fontWeight: 900,
+                      background: active ? "#43a047" : "rgba(0,0,0,0.10)",
+                      color: active ? "#fff" : "#111",
+                    }}
+                  >
+                    {active ? "ATIVO" : "INATIVO"}
+                  </div>
+                </div>
+              </button>
+
+              {active ? (
+                <div style={{ marginTop: 10 }}>
+                  <textarea
+                    value={row.note || ""}
+                    onChange={(e) => onNote(f.key, e.target.value)}
+                    placeholder={f.placeholder}
+                    disabled={saving}
+                    rows={3}
+                    className={`${INPUT_CLASS} resize-none`}
+                    onMouseDown={(e) => e.stopPropagation()}
+                    onClick={(e) => e.stopPropagation()}
+                    onKeyDown={(e) => e.stopPropagation()}
+                  />
+                  <div style={{ marginTop: 6, opacity: 0.7, fontSize: 12 }}>Você pode detalhar o máximo que quiser.</div>
+                </div>
+              ) : null}
+            </div>
+          );
+        })}
+      </div>
     </Card>
   );
 }
@@ -1842,69 +1853,6 @@ function Perfil({ session, profile, onProfileSaved }) {
 
   const canSave = !saving;
 
-  function TriageEditor({ title, subtitle, fields, value, onToggle, onNote }) {
-    return (
-      <Card>
-        <h3 style={{ marginTop: 0 }}>{title}</h3>
-        {subtitle ? <p style={{ opacity: 0.75, marginTop: 6 }}>{subtitle}</p> : null}
-
-        <div style={{ display: "grid", gap: 12, marginTop: 12 }}>
-          {fields.map((f) => {
-            const row = value?.[f.key] ?? { on: false, note: "" };
-            const active = Boolean(row.on);
-
-            return (
-              <div key={f.key} style={{ padding: 14, borderRadius: 16, border: "1px solid rgba(0,0,0,0.12)", background: "#fff" }}>
-                <button
-                  type="button"
-                  onClick={onToggle(f.key)}
-                  disabled={saving}
-                  style={{
-                    width: "100%",
-                    textAlign: "left",
-                    border: active ? "2px solid #43a047" : "2px solid rgba(0,0,0,0.12)",
-                    borderRadius: 14,
-                    padding: 14,
-                    background: active ? "rgba(67,160,71,0.08)" : "#fff",
-                    cursor: saving ? "not-allowed" : "pointer",
-                  }}
-                  aria-pressed={active}
-                >
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
-                    <div style={{ fontWeight: 900, fontSize: 16 }}>{f.label}</div>
-                    <div
-                      style={{
-                        padding: "6px 10px",
-                        borderRadius: 999,
-                        fontSize: 12,
-                        fontWeight: 900,
-                        background: active ? "#43a047" : "rgba(0,0,0,0.10)",
-                        color: active ? "#fff" : "#111",
-                      }}
-                    >
-                      {active ? "ATIVO" : "INATIVO"}
-                    </div>
-                  </div>
-                </button>
-
-                {active ? (
-                  <div style={{ marginTop: 10 }}>
-                    <Input
-                      value={row.note || ""}
-                      onChange={(e) => onNote(f.key, e.target.value)}
-                      placeholder={f.placeholder}
-                      disabled={saving}
-                    />
-                    <div style={{ marginTop: 6, opacity: 0.7, fontSize: 12 }}>Você pode detalhar o máximo que quiser.</div>
-                  </div>
-                ) : null}
-              </div>
-            );
-          })}
-        </div>
-      </Card>
-    );
-  }
 
   return (
     <div style={{ display: "grid", gap: 16 }}>
@@ -2009,11 +1957,11 @@ function Perfil({ session, profile, onProfileSaved }) {
             </div>
           </Field>
 
-          <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+          <div className="flex flex-wrap gap-2">
             <button
               type="submit"
               disabled={!canSave}
-              style={{ ...styles.btn, flex: 1, padding: "14px 18px" }}
+              className={`${PRIMARY_BUTTON_CLASS} flex-1`}
             >
               {saving ? "Salvando..." : "Salvar alterações"}
             </button>
@@ -2048,7 +1996,7 @@ function Perfil({ session, profile, onProfileSaved }) {
                   setSaving(false);
                 }
               }}
-              style={{ ...styles.btnGhost, flex: 1, padding: "14px 18px" }}
+              className={`${GHOST_BUTTON_CLASS} flex-1`}
             >
               Salvar e voltar
             </button>
@@ -2069,6 +2017,7 @@ function Perfil({ session, profile, onProfileSaved }) {
         value={healthTriage}
         onToggle={(k) => () => toggleTriage(setHealthTriage, k)}
         onNote={(k, v) => setTriageNote(setHealthTriage, k, v)}
+        saving={saving}
       />
 
       <TriageEditor
@@ -2078,6 +2027,7 @@ function Perfil({ session, profile, onProfileSaved }) {
         value={emotionalTriage}
         onToggle={(k) => () => toggleTriage(setEmotionalTriage, k)}
         onNote={(k, v) => setTriageNote(setEmotionalTriage, k, v)}
+        saving={saving}
       />
 
       <Card>
@@ -2155,12 +2105,12 @@ function Historico({ profile }) {
   return (
     <div style={{ display: "grid", gap: 16 }}>
       <Card>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 style={{ marginTop: 0, marginBottom: 6 }}>Meu histórico</h2>
             <p style={{ opacity: 0.75, margin: 0 }}>Resumo do que você respondeu.</p>
           </div>
-          <button type="button" style={styles.btnGhost} onClick={() => nav("/app", { replace: true })}>
+          <button type="button" className={GHOST_BUTTON_CLASS} onClick={() => nav("/app", { replace: true })}>
             Voltar
           </button>
         </div>
@@ -2205,9 +2155,21 @@ function Historico({ profile }) {
           </div>
         </div>
 
-        <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 14 }}>
-          <button type="button" style={styles.btn} onClick={() => nav("/app/produtos")}>Ir para Produtos</button>
-          <button type="button" style={styles.btnGhost} onClick={() => nav("/app/pagamentos")}>Ir para Pagamentos</button>
+        <div className="flex flex-wrap gap-2 mt-4">
+          <button
+            type="button"
+            className={`${PRIMARY_BUTTON_CLASS} flex-1`}
+            onClick={() => nav("/app/produtos")}
+          >
+            Ir para Produtos
+          </button>
+          <button
+            type="button"
+            className={GHOST_BUTTON_CLASS}
+            onClick={() => nav("/app/pagamentos")}
+          >
+            Ir para Pagamentos
+          </button>
         </div>
       </Card>
     </div>
@@ -2296,14 +2258,14 @@ function AdminContents({ session }) {
   return (
     <div style={{ display: "grid", gap: 16 }}>
       <Card>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 style={{ marginTop: 0, marginBottom: 6 }}>Admin • Conteúdos</h2>
             <p style={{ opacity: 0.75, margin: 0 }}>
               Envie vídeos, e‑books e arquivos para download via Supabase Storage.
             </p>
           </div>
-          <button type="button" style={styles.btnGhost} onClick={() => nav("/app/conteudos")}>Voltar</button>
+          <button type="button" className={GHOST_BUTTON_CLASS} onClick={() => nav("/app/conteudos")}>Voltar</button>
         </div>
       </Card>
 
@@ -2339,7 +2301,7 @@ function AdminContents({ session }) {
             />
           </Field>
 
-          <button type="submit" disabled={busy} style={{ ...styles.btn, width: "100%" }}>
+          <button type="submit" disabled={busy} className={`${PRIMARY_BUTTON_CLASS} w-full`}>
             {busy ? "Enviando..." : "Enviar"}
           </button>
 
@@ -2352,9 +2314,14 @@ function AdminContents({ session }) {
       </Card>
 
       <Card>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <h3 style={{ marginTop: 0, marginBottom: 0 }}>Arquivos no bucket</h3>
-          <button type="button" style={styles.btnGhost} disabled={busy} onClick={() => setRefreshKey((k) => k + 1)}>
+          <button
+            type="button"
+            className={GHOST_BUTTON_CLASS}
+            disabled={busy}
+            onClick={() => setRefreshKey((k) => k + 1)}
+          >
             Atualizar
           </button>
         </div>
@@ -2395,7 +2362,7 @@ function AdminContents({ session }) {
                       href={url}
                       target="_blank"
                       rel="noreferrer"
-                      style={{ ...styles.btn, textDecoration: "none", display: "inline-block" }}
+                      className={`${PRIMARY_BUTTON_CLASS} inline-flex items-center no-underline`}
                     >
                       Abrir
                     </a>
@@ -2506,7 +2473,7 @@ function TriagemResumo({ profile }) {
       <button
         type="button"
         onClick={() => nav("/app/saude", { replace: true })}
-        style={{ ...styles.btn, marginTop: 14, width: "100%" }}
+        className={`${PRIMARY_BUTTON_CLASS} w-full mt-3`}
       >
         Próximo
       </button>
@@ -2521,25 +2488,6 @@ function HealthTriage({ session, profile, onProfileSaved }) {
 
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState("");
-
-  const questions = useMemo(
-    () => [
-      { key: "cabeca_intensa", label: "Tem dores de cabeças intensas?", placeholder: "Frequência e intensidade" },
-      { key: "alimentacao", label: "Possui problemas com alimentação?", placeholder: "Quanto tempo, e qual o problema?" },
-      { key: "acorda_cansado", label: "Acorda cansado?", placeholder: "Com que frequência?" },
-      { key: "fuma", label: "Você fuma?", placeholder: "Com que frequência?" },
-      { key: "alcool", label: "Faz uso de bebida alcoólica?", placeholder: "Frequência e tipo de bebida" },
-      { key: "ja_usou_cannabis", label: "Já usou cannabis (maconha)?", placeholder: "Com que frequência? Há quanto tempo?" },
-      { key: "arritmia", label: "Possui arritmia cardíaca?", placeholder: "Detalhe (se souber)" },
-      { key: "psicose", label: "Histórico de psicose / esquizofrenia?", placeholder: "Explique brevemente" },
-      { key: "tratamento_atual", label: "Atualmente, faz algum tratamento?", placeholder: "Qual tratamento?" },
-      { key: "usa_remedios", label: "Faz uso frequente de remédios?", placeholder: "Quais e com que frequência?" },
-      { key: "doenca_cronica", label: "Possui alguma doença crônica?", placeholder: "Qual?" },
-      { key: "cirurgia", label: "Já fez alguma cirurgia?", placeholder: "Qual e quando?" },
-      { key: "alergia", label: "Possui alguma alergia?", placeholder: "Qual alergia?" },
-    ],
-    []
-  );
 
   const [answers, setAnswers] = useState(() => normalizeTriage(profile?.health_triage));
 
@@ -2584,84 +2532,26 @@ function HealthTriage({ session, profile, onProfileSaved }) {
         <p style={{ marginTop: 8, opacity: 0.75 }}>Responda com muita atenção.</p>
       </Card>
 
-      <Card>
-        <div className="gaia-force-text">
-          <div style={{ display: "grid", gap: 14 }}>
-            {questions.map((q) => {
-              const row = answers?.[q.key] ?? { on: false, note: "" };
-              const on = Boolean(row.on);
+      <TriageEditor
+        title="Triagem de saúde"
+        subtitle="Toque em um item para ativar/desativar. Quando ativo, você pode escrever detalhes abaixo."
+        fields={HEALTH_FIELDS}
+        value={answers}
+        onToggle={(key) => () => toggle(key)}
+        onNote={(key, value) => setNote(key, value)}
+        saving={saving}
+      />
 
-              return (
-                <div key={q.key} style={{ padding: "12px 0", borderBottom: "1px solid rgba(0,0,0,0.08)" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
-                    <div style={{ fontWeight: 800 }}>{q.label}</div>
+      <button
+        type="button"
+        onClick={handleNext}
+        disabled={saving}
+        className={`${PRIMARY_BUTTON_CLASS} w-full mt-4`}
+      >
+        {saving ? "Salvando..." : "Próximo"}
+      </button>
 
-                    <button
-                      type="button"
-                      onClick={() => toggle(q.key)}
-                      disabled={saving}
-                      style={{
-                        width: 56,
-                        height: 32,
-                        borderRadius: 999,
-                        border: "1px solid rgba(0,0,0,0.2)",
-                        background: on ? "#43a047" : "#333",
-                        position: "relative",
-                        cursor: saving ? "not-allowed" : "pointer",
-                        opacity: saving ? 0.7 : 1,
-                      }}
-                      aria-pressed={on}
-                    >
-                      <span
-                        style={{
-                          position: "absolute",
-                          top: 3,
-                          left: on ? 28 : 4,
-                          width: 26,
-                          height: 26,
-                          borderRadius: 999,
-                          background: "#fff",
-                          transition: "left 120ms ease",
-                        }}
-                      />
-                    </button>
-                  </div>
-
-                  {on ? (
-                    <div style={{ marginTop: 10 }}>
-                      <Input
-                        value={row.note || ""}
-                        onChange={(e) => setNote(q.key, e.target.value)}
-                        placeholder={q.placeholder}
-                        disabled={saving}
-                        style={{ borderRadius: 12 }}
-                      />
-                    </div>
-                  ) : null}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        <button
-          type="button"
-          onClick={handleNext}
-          disabled={saving}
-          style={{
-            ...styles.btn,
-            width: "100%",
-            marginTop: 16,
-            padding: "14px 18px",
-            borderRadius: 999,
-            fontSize: 16,
-          }}
-        >
-          {saving ? "Salvando..." : "Próximo"}
-        </button>
-
-        {msg ? <p style={{ marginTop: 12, color: "#b00020" }}>{msg}</p> : null}
-      </Card>
+      {msg ? <p style={{ marginTop: 12, color: "#b00020" }}>{msg}</p> : null}
     </div>
   );
 }
@@ -2673,21 +2563,6 @@ function EmotionalTriage({ session, profile, onProfileSaved }) {
 
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState("");
-
-  const questions = useMemo(
-    () => [
-      { key: "tristeza", label: "Sente muita tristeza?", placeholder: "Com qual frequência e motivo?" },
-      { key: "foco", label: "Perde o foco facilmente?", placeholder: "Especifique" },
-      { key: "memoria", label: "Tem problemas de memória?", placeholder: "Há quanto tempo, e qual a intensidade?" },
-      { key: "irritado_triste", label: "Fica facilmente irritado ou triste?", placeholder: "Com que frequência?" },
-      { key: "estresse", label: "Possui problemas com estresse?", placeholder: "Quais os motivos?" },
-      { key: "panico", label: "Já teve episódios de pânico?", placeholder: "Com que frequência e há quanto tempo?" },
-      { key: "diagnostico_psicose", label: "Já recebeu diagnóstico de esquizofrenia ou psicose?", placeholder: "Há quanto tempo?" },
-      { key: "familia_psicose", label: "Algum parente próximo tem esquizofrenia ou psicose?", placeholder: "Qual parente?" },
-      { key: "diagnostico_ans_depr", label: "Já teve diagnóstico de ansiedade ou depressão?", placeholder: "Há quanto tempo?" },
-    ],
-    []
-  );
 
   const [answers, setAnswers] = useState(() => normalizeTriage(profile?.emotional_triage));
 
@@ -2734,82 +2609,26 @@ function EmotionalTriage({ session, profile, onProfileSaved }) {
         <p style={{ marginTop: 8, opacity: 0.75 }}>Responda com muita atenção.</p>
       </Card>
 
-      <Card>
-        <div style={{ display: "grid", gap: 14 }}>
-          {questions.map((q) => {
-            const row = answers?.[q.key] ?? { on: false, note: "" };
-            const on = Boolean(row.on);
+      <TriageEditor
+        title="Triagem emocional"
+        subtitle="Escolha o que faz sentido e detalhe quando quiser."
+        fields={EMOTIONAL_FIELDS}
+        value={answers}
+        onToggle={(key) => () => toggle(key)}
+        onNote={(key, value) => setNote(key, value)}
+        saving={saving}
+      />
 
-            return (
-              <div key={q.key} style={{ padding: "12px 0", borderBottom: "1px solid rgba(0,0,0,0.08)" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
-                  <div style={{ fontWeight: 800 }}>{q.label}</div>
+      <button
+        type="button"
+        onClick={handleNext}
+        disabled={saving}
+        className={`${PRIMARY_BUTTON_CLASS} w-full mt-4`}
+      >
+        {saving ? "Salvando..." : "Próximo"}
+      </button>
 
-                  <button
-                    type="button"
-                    onClick={() => toggle(q.key)}
-                    disabled={saving}
-                    style={{
-                      width: 56,
-                      height: 32,
-                      borderRadius: 999,
-                      border: "1px solid rgba(0,0,0,0.2)",
-                      background: on ? "#43a047" : "#333",
-                      position: "relative",
-                      cursor: saving ? "not-allowed" : "pointer",
-                      opacity: saving ? 0.7 : 1,
-                    }}
-                    aria-pressed={on}
-                  >
-                    <span
-                      style={{
-                        position: "absolute",
-                        top: 3,
-                        left: on ? 28 : 4,
-                        width: 26,
-                        height: 26,
-                        borderRadius: 999,
-                        background: "#fff",
-                        transition: "left 120ms ease",
-                      }}
-                    />
-                  </button>
-                </div>
-
-                {on ? (
-                  <div style={{ marginTop: 10 }}>
-                    <Input
-                      value={row.note || ""}
-                      onChange={(e) => setNote(q.key, e.target.value)}
-                      placeholder={q.placeholder}
-                      disabled={saving}
-                      style={{ borderRadius: 12 }}
-                    />
-                  </div>
-                ) : null}
-              </div>
-            );
-          })}
-        </div>
-
-        <button
-          type="button"
-          onClick={handleNext}
-          disabled={saving}
-          style={{
-            ...styles.btn,
-            width: "100%",
-            marginTop: 16,
-            padding: "14px 18px",
-            borderRadius: 999,
-            fontSize: 16,
-          }}
-        >
-          {saving ? "Salvando..." : "Próximo"}
-        </button>
-
-        {msg ? <p style={{ marginTop: 12, color: "#b00020" }}>{msg}</p> : null}
-      </Card>
+      {msg ? <p style={{ marginTop: 12, color: "#b00020" }}>{msg}</p> : null}
     </div>
   );
 }
@@ -2943,15 +2762,7 @@ function EmotionalSymptoms({ session, profile, onProfileSaved }) {
           type="button"
           onClick={handleSave}
           disabled={saving}
-          style={{
-            ...styles.btn,
-            width: "100%",
-            marginTop: 8,
-            padding: "14px 18px",
-            borderRadius: 999,
-            fontSize: 16,
-            opacity: saving ? 0.7 : 1,
-          }}
+          className={`${PRIMARY_BUTTON_CLASS} w-full mt-3`}
         >
           {saving ? "Salvando..." : "Salvar e continuar"}
         </button>
@@ -2960,15 +2771,7 @@ function EmotionalSymptoms({ session, profile, onProfileSaved }) {
           type="button"
           onClick={() => nav("/app/emocional", { replace: true })}
           disabled={saving}
-          style={{
-            ...styles.btnGhost,
-            width: "100%",
-            marginTop: 10,
-            padding: "14px 18px",
-            borderRadius: 999,
-            fontSize: 16,
-            opacity: saving ? 0.7 : 1,
-          }}
+          className={`${GHOST_BUTTON_CLASS} w-full mt-3`}
         >
           Voltar
         </button>
@@ -3005,11 +2808,11 @@ function RequireProfileComplete({ session, profile, loadingProfile, profileError
         <p style={{ opacity: 0.8, marginTop: 6 }}>
           {String(profileError?.message || profileError)}
         </p>
-        <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 14 }}>
-          <button type="button" style={styles.btn} onClick={() => nav(0)}>
+        <div className="flex flex-wrap gap-2 mt-4">
+          <button type="button" className={PRIMARY_BUTTON_CLASS} onClick={() => nav(0)}>
             Tentar novamente
           </button>
-          <Link to="/auth" style={{ ...styles.btnGhost, textDecoration: "none" }}>
+          <Link to="/auth" className={`${GHOST_BUTTON_CLASS} inline-flex items-center no-underline`}>
             Ir para login
           </Link>
         </div>
@@ -3043,7 +2846,6 @@ export default function App() {
   const [loadingProfile, setLoadingProfile] = useState(false);
   const [profileError, setProfileError] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [signingOut, setSigningOut] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -3070,109 +2872,80 @@ export default function App() {
       .finally(() => setLoadingProfile(false));
   }, [session]);
 
-  async function handleSignOut() {
-    if (signingOut) return;
-
-    setSigningOut(true);
-    let timeoutId;
-    try {
-      await Promise.race([
-        supabase.auth.signOut(),
-        new Promise((_, reject) => {
-          timeoutId = setTimeout(() => reject(new Error("Supabase timeout ao sair")), 5000);
-        }),
-      ]);
-    } catch (err) {
-      logWarn("signout_error", { message: String(err?.message || err) });
-    } finally {
-      if (timeoutId) clearTimeout(timeoutId);
-      setSession(null);
-      setProfile(null);
-      setSigningOut(false);
-      navigate("/auth", { replace: true });
-    }
-  }
-
   return (
     <Routes>
-      <Route path="/" element={<Navigate to={session ? "/start" : "/auth"} replace />} />
+      <Route element={<PhoneFrameLayout />}>
+        <Route path="/" element={<Navigate to={session ? "/start" : "/auth"} replace />} />
 
-      <Route path="/auth" element={<Welcome />} />
-      <Route path="/conteudos" element={<PublicConteudos />} />
-      <Route path="/login" element={<Login />} />
-      <Route path="/reset-password" element={<ResetPassword />} />
-      <Route path="/criar-conta" element={<Signup />} />
+        <Route path="/auth" element={<Welcome />} />
+        <Route path="/conteudos" element={<PublicConteudos />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/criar-conta" element={<Signup />} />
 
-      <Route
-        path="/start"
-        element={
-          <ProfileGate
-            session={session}
-            profile={profile}
-            loadingProfile={loadingProfile}
-            profileError={profileError}
-          />
-        }
-      />
+        <Route
+          path="/start"
+          element={
+            <ProfileGate
+              session={session}
+              profile={profile}
+              loadingProfile={loadingProfile}
+              profileError={profileError}
+            />
+          }
+        />
 
-      <Route
-        path="/perfil-clinico"
-        element={
-          <ClinicalProfile
-            session={session}
-            profile={profile}
-            onProfileSaved={setProfile}
-          />
-        }
-      />
+        <Route
+          path="/perfil-clinico"
+          element={
+            <ClinicalProfile
+              session={session}
+              profile={profile}
+              onProfileSaved={setProfile}
+            />
+          }
+        />
 
-      <Route
-        path="/wizard"
-        element={
-          <Wizard
-            session={session}
-            profile={profile}
-            onProfileSaved={setProfile}
-          />
-        }
-      />
+        <Route
+          path="/wizard"
+          element={
+            <Wizard
+              session={session}
+              profile={profile}
+              onProfileSaved={setProfile}
+            />
+          }
+        />
 
-      <Route
-        path="/patologias"
-        element={
-          <Patologias
-            session={session}
-            profile={profile}
-            onProfileSaved={setProfile}
-          />
-        }
-      />
+        <Route
+          path="/patologias"
+          element={
+            <Patologias
+              session={session}
+              profile={profile}
+              onProfileSaved={setProfile}
+            />
+          }
+        />
+      </Route>
 
-      <Route
-        path="/app"
-        element={
-          <Layout
-            session={session}
-            signingOut={signingOut}
-            onSignOut={handleSignOut}
-          />
-        }
-      >
-        <Route index element={<AppDashboard session={session} profile={profile} />} />
-        <Route path="perfil" element={<Perfil session={session} profile={profile} onProfileSaved={setProfile} />} />
-        <Route path="historico" element={<Historico profile={profile} />} />
-        <Route path="produtos" element={<Produtos />} />
-        <Route path="carrinho" element={<Carrinho />} />
-        <Route path="pagamentos" element={<Pagamentos />} />
-        <Route path="conteudos" element={<Conteudos session={session} isAdmin={isAdmin} />} />
-        <Route path="medicos" element={<Medicos />} />
-        <Route path="receitas" element={<Receitas />} />
-        <Route path="pedidos" element={<Pedidos />} />
-        <Route path="alertas" element={<AlertasUso />} />
-
-        <Route path="saude" element={<HealthTriage session={session} profile={profile} onProfileSaved={setProfile} />} />
-        <Route path="emocional" element={<EmotionalTriage session={session} profile={profile} onProfileSaved={setProfile} />} />
-        <Route path="emocional/sintomas" element={<EmotionalSymptoms session={session} profile={profile} onProfileSaved={setProfile} />} />
+      <Route element={<Layout />}>
+        <Route path="/app">
+          <Route index element={<AppDashboard session={session} profile={profile} />} />
+          <Route path="perfil" element={<Perfil session={session} profile={profile} onProfileSaved={setProfile} />} />
+          <Route path="historico" element={<Historico profile={profile} />} />
+          <Route path="produtos" element={<Produtos />} />
+          <Route path="carrinho" element={<Carrinho />} />
+          <Route path="pagamentos" element={<Pagamentos />} />
+          <Route path="conteudos" element={<Conteudos session={session} isAdmin={isAdmin} />} />
+          <Route path="medicos" element={<Medicos />} />
+          <Route path="receitas" element={<Receitas />} />
+          <Route path="pedidos" element={<Pedidos />} />
+          <Route path="alertas" element={<AlertasUso />} />
+          <Route path="saude" element={<HealthTriage session={session} profile={profile} onProfileSaved={setProfile} />} />
+          <Route path="emocional" element={<EmotionalTriage session={session} profile={profile} onProfileSaved={setProfile} />} />
+          <Route path="emocional/sintomas" element={<EmotionalSymptoms session={session} profile={profile} onProfileSaved={setProfile} />} />
+        </Route>
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />
