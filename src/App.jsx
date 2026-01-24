@@ -15,7 +15,7 @@ const GHOST_BUTTON_CLASS =
   "rounded-full border border-neutral-300 bg-white px-4 py-2 font-semibold hover:bg-neutral-100 transition";
 const INPUT_CLASS =
   "w-full rounded-xl border border-neutral-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500";
-import Layout, { PhoneFrameLayout } from "./components/Layout.jsx";
+import Layout from "./components/Layout.jsx";
 
 /**
  * FLUXO (OFICIAL)
@@ -2925,60 +2925,58 @@ export default function App() {
 
   return (
     <Routes>
-      <Route element={<PhoneFrameLayout />}>
-        <Route path="/" element={<Navigate to={session ? "/start" : "/auth"} replace />} />
+      <Route path="/" element={<Navigate to={session ? "/start" : "/auth"} replace />} />
 
-        <Route path="/auth" element={<Welcome />} />
-        <Route path="/conteudos" element={<PublicConteudos />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/reset-password" element={<ResetPassword />} />
-        <Route path="/criar-conta" element={<Signup />} />
+      <Route path="/auth" element={<Welcome />} />
+      <Route path="/conteudos" element={<PublicConteudos />} />
+      <Route path="/login" element={<Login />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
+      <Route path="/criar-conta" element={<Signup />} />
 
-        <Route
-          path="/start"
-          element={
-            <ProfileGate
-              session={session}
-              profile={profile}
-              loadingProfile={loadingProfile}
-              profileError={profileError}
-            />
-          }
-        />
+      <Route
+        path="/start"
+        element={
+          <ProfileGate
+            session={session}
+            profile={profile}
+            loadingProfile={loadingProfile}
+            profileError={profileError}
+          />
+        }
+      />
 
-        <Route
-          path="/perfil-clinico"
-          element={
-            <ClinicalProfile
-              session={session}
-              profile={profile}
-              onProfileSaved={setProfile}
-            />
-          }
-        />
+      <Route
+        path="/perfil-clinico"
+        element={
+          <ClinicalProfile
+            session={session}
+            profile={profile}
+            onProfileSaved={setProfile}
+          />
+        }
+      />
 
-        <Route
-          path="/wizard"
-          element={
-            <Wizard
-              session={session}
-              profile={profile}
-              onProfileSaved={setProfile}
-            />
-          }
-        />
+      <Route
+        path="/wizard"
+        element={
+          <Wizard
+            session={session}
+            profile={profile}
+            onProfileSaved={setProfile}
+          />
+        }
+      />
 
-        <Route
-          path="/patologias"
-          element={
-            <Patologias
-              session={session}
-              profile={profile}
-              onProfileSaved={setProfile}
-            />
-          }
-        />
-      </Route>
+      <Route
+        path="/patologias"
+        element={
+          <Patologias
+            session={session}
+            profile={profile}
+            onProfileSaved={setProfile}
+          />
+        }
+      />
 
       <Route element={<Layout />}>
         <Route path="/app">
