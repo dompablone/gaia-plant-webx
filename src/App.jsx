@@ -78,6 +78,31 @@ function Input(props) {
   );
 }
 
+function GlobalLoading({ title, subtitle, onRetry, onGoLogin }) {
+  return (
+    <div style={{ ...styles.authPage, padding: "24px 16px" }}>
+      <div style={{ width: "100%", maxWidth: 420 }}>
+        <Card>
+          <h2 style={{ marginTop: 0, fontSize: 24 }}>{title || "Carregando..."}</h2>
+          {subtitle ? <p style={{ opacity: 0.75, marginTop: 8 }}>{subtitle}</p> : null}
+          <div className="flex flex-wrap gap-2 mt-4">
+            {onRetry ? (
+              <button type="button" className={`${PRIMARY_BUTTON_CLASS} flex-1`} onClick={onRetry}>
+                Tentar novamente
+              </button>
+            ) : null}
+            {onGoLogin ? (
+              <button type="button" className={`${GHOST_BUTTON_CLASS} flex-1`} onClick={onGoLogin}>
+                Voltar pro login
+              </button>
+            ) : null}
+          </div>
+        </Card>
+      </div>
+    </div>
+  );
+}
+
 // -------------------- Auth Pages --------------------
 function Welcome() {
   return (
