@@ -7,17 +7,13 @@ import { fetchMyProfile, upsertMyProfile } from "./lib/profileApi.js";
 import { logWarn } from "./lib/telemetry.js";
 import { normalizeTriage, isPersonalComplete, isWizardComplete, hasConditionsSelected, getNextRoute } from "./lib/triage.js";
 import { styles } from "./styles/inlineStyles.js";
-
-const GAIA_ICON = "/gaia-icon.png";
-const PRIMARY_BUTTON_CLASS =
-  "rounded-full bg-emerald-600 text-white font-semibold px-4 py-2 transition active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed";
-const GHOST_BUTTON_CLASS =
-  "rounded-full border border-neutral-300 bg-white px-4 py-2 font-semibold hover:bg-neutral-100 transition";
-const INPUT_CLASS =
-  "w-full rounded-xl border border-neutral-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500";
-import Layout from "./components/Layout.jsx";
+import { GAIA_ICON, PRIMARY_BUTTON_CLASS, GHOST_BUTTON_CLASS, INPUT_CLASS } from "./lib/constants/ui.js";
+import Card from "./components/ui/Card.jsx";
+import AppDashboard from "./pages/app/AppDashboard.jsx";
+import Perfil from "./pages/app/Perfil.jsx";
+import Medicos from "./pages/app/Medicos.jsx";
+import Layout, { PhoneFrameLayout } from "./components/Layout.jsx";
 import SelectButton from "./components/ui/SelectButton.jsx";
-
 /**
  * FLUXO (OFICIAL)
  * /auth -> /start -> /perfil-clinico -> /wizard -> /patologias -> /app
@@ -27,8 +23,6 @@ async function saveProfileAndReload(userId, patch) {
   await upsertMyProfile(userId, patch);
   return await fetchMyProfile(userId);
 }
-
-
 // -------------------- Helpers --------------------
 
 const CART_STORAGE_KEY = "gaia.cart.items";
@@ -50,15 +44,6 @@ function writeCart(items) {
     // ignore storage errors
   }
 }
-
-function Card({ children, className = "" }) {
-  return (
-    <div className={`rounded-2xl bg-white border border-neutral-200 shadow-sm p-4 gaia-force-text ${className}`}>
-      {children}
-    </div>
-  );
-}
-
 function Field({ label, children }) {
   return (
     <div className="mb-3">
@@ -76,31 +61,6 @@ function Input(props) {
       style={style}
       className={`${INPUT_CLASS} ${className}`}
     />
-  );
-}
-
-function GlobalLoading({ title, subtitle, onRetry, onGoLogin }) {
-  return (
-    <div style={{ ...styles.authPage, padding: "24px 16px" }}>
-      <div style={{ width: "100%", maxWidth: 420 }}>
-        <Card>
-          <h2 style={{ marginTop: 0, fontSize: 24 }}>{title || "Carregando..."}</h2>
-          {subtitle ? <p style={{ opacity: 0.75, marginTop: 8 }}>{subtitle}</p> : null}
-          <div className="flex flex-wrap gap-2 mt-4">
-            {onRetry ? (
-              <button type="button" className={`${PRIMARY_BUTTON_CLASS} flex-1`} onClick={onRetry}>
-                Tentar novamente
-              </button>
-            ) : null}
-            {onGoLogin ? (
-              <button type="button" className={`${GHOST_BUTTON_CLASS} flex-1`} onClick={onGoLogin}>
-                Voltar pro login
-              </button>
-            ) : null}
-          </div>
-        </Card>
-      </div>
-    </div>
   );
 }
 
@@ -317,25 +277,37 @@ function ResetPassword() {
       return;
     }
 
-    supabase.auth
-      .setSession({ access_token, refresh_token })
-      .then(({ error }) => {
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const { error } = await supabase.auth.setSession({ access_token, refresh_token });
+        if (cancelled) return;
+
         if (error) {
           setLinkError("Não foi possível validar o link. Solicite novamente.");
           return;
         }
+
         setFormReady(true);
-      })
-      .catch(() => {
-        setLinkError("Não foi possível validar o link. Solicite novamente.");
-      })
-      .finally(() => {
+      } catch {
+        if (!cancelled) {
+          setLinkError("Não foi possível validar o link. Solicite novamente.");
+        }
+      } finally {
+        if (cancelled) return;
+
         setLoadingLink(false);
         const cleanUrl = window.location.pathname + window.location.search;
         if (window?.history?.replaceState) {
           window.history.replaceState(null, document.title, cleanUrl);
         }
-      });
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   async function handleSubmit(e) {
@@ -420,64 +392,89 @@ function ResetPassword() {
     </div>
   );
 }
+// -------------------- GlobalLoading --------------------
+function GlobalLoading({ title = "Carregando…", subtitle = "", onRetry, onGoLogin }) {
+  return (
+    <div style={{ minHeight: "100vh", background: "#f6f7f8", padding: "24px 16px", display: "grid", placeItems: "center" }}>
+      <div style={{ width: "100%", maxWidth: 420 }}>
+        <div style={{ background: "#fff", border: "1px solid rgba(0,0,0,0.12)", borderRadius: 16, padding: 16, boxShadow: "0 6px 18px rgba(0,0,0,0.06)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <div
+              aria-hidden="true"
+              style={{
+                width: 28,
+                height: 28,
+                borderRadius: 999,
+                border: "3px solid rgba(0,0,0,0.12)",
+                borderTopColor: "#43a047",
+                animation: "gaiaSpin 0.9s linear infinite",
+              }}
+            />
+            <div style={{ display: "grid", gap: 4 }}>
+              <div style={{ fontWeight: 900, fontSize: 18 }}>{title}</div>
+              {subtitle ? <div style={{ opacity: 0.75, fontSize: 13 }}>{subtitle}</div> : null}
+            </div>
+          </div>
+
+          <div className="flex flex-wrap gap-2 mt-4">
+            {typeof onRetry === "function" ? (
+              <button type="button" onClick={onRetry} className={GHOST_BUTTON_CLASS}>
+                Tentar novamente
+              </button>
+            ) : null}
+            {typeof onGoLogin === "function" ? (
+              <button type="button" onClick={onGoLogin} className={PRIMARY_BUTTON_CLASS}>
+                Ir para login
+              </button>
+            ) : null}
+          </div>
+
+          <div style={{ marginTop: 10, opacity: 0.65, fontSize: 12 }}>
+            Se isso persistir, atualize a página ou faça login novamente.
+          </div>
+        </div>
+      </div>
+
+      <style>{`@keyframes gaiaSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
+    </div>
+  );
+}
 
 // -------------------- Gate /start (ProfileGate isolado) --------------------
 function ProfileGate({ session, profile, loadingProfile, profileError }) {
   const nav = useNavigate();
-  const lastTargetRef = useRef(null);
-  const userId = session?.user?.id;
-
-  useEffect(() => {
-    if (loadingProfile) return;
-
-    if (!userId) {
-      lastTargetRef.current = "/auth";
-      nav("/auth", { replace: true });
-      return;
-    }
-
-    if (profileError) {
-      logWarn("profile_gate_error", { message: String(profileError?.message || profileError) });
-      return;
-    }
-
-    const target = getNextRoute(profile);
-    if (!target || target === lastTargetRef.current) return;
-
-    lastTargetRef.current = target;
-    nav(target, { replace: true });
-  }, [loadingProfile, userId, profile, profileError, nav]);
 
   if (loadingProfile) {
-    return (
-      <GlobalLoading
-        title="Carregando seu perfil…"
-        subtitle="Estamos sincronizando seus dados com o Supabase."
-        onRetry={() => window.location.reload()}
-        onGoLogin={() => nav("/auth", { replace: true })}
-      />
-    );
+    return <div style={{ padding: 20 }}>Carregando perfil…</div>;
+  }
+
+  if (!session?.user) {
+    return <Navigate to="/auth" replace />;
   }
 
   if (profileError) {
     return (
-      <GlobalLoading
-        title="Não foi possível carregar"
-        subtitle={String(profileError?.message || profileError)}
-        onRetry={() => window.location.reload()}
-        onGoLogin={() => nav("/auth", { replace: true })}
-      />
+      <Card>
+        <h3>Erro ao carregar perfil</h3>
+        <p>{String(profileError)}</p>
+        <button onClick={() => nav(0)}>Tentar novamente</button>
+      </Card>
     );
   }
 
-  return (
-    <GlobalLoading
-      title="Preparando…"
-      subtitle="Redirecionando para o próximo passo."
-      onRetry={() => window.location.reload()}
-      onGoLogin={() => nav("/auth", { replace: true })}
-    />
-  );
+  if (!profile || !isPersonalComplete(profile)) {
+    return <Navigate to="/perfil-clinico" replace />;
+  }
+
+  if (!isWizardComplete(profile)) {
+    return <Navigate to="/wizard" replace />;
+  }
+
+  if (!hasConditionsSelected(profile)) {
+    return <Navigate to="/patologias" replace />;
+  }
+
+  return <Navigate to="/app" replace />;
 }
 
 // -------------------- Perfil Clinico --------------------
@@ -573,6 +570,11 @@ function ClinicalProfile({ session, profile, onProfileSaved }) {
     e.preventDefault();
     if (saving) return;
 
+    if (!userId) {
+      setMsg("Sessão inválida. Faça login novamente.");
+      return;
+    }
+
     setMsg("");
     setCpfError("");
 
@@ -614,7 +616,7 @@ function ClinicalProfile({ session, profile, onProfileSaved }) {
         state: stateValue,
       };
       const fresh = await saveProfileAndReload(userId, patch);
-      onProfileSaved(fresh);
+      onProfileSaved?.(fresh);
       nav("/wizard", { replace: true });
     } catch (err) {
       setMsg(err?.message || "Erro ao salvar perfil.");
@@ -724,8 +726,24 @@ function Wizard({ session, profile, onProfileSaved }) {
   }, [profile, nav]);
 
   async function handleSave() {
+    if (saving) return;
+
     setSaving(true);
     setMsg("");
+
+    if (!userId) {
+      setMsg("Sessão inválida. Faça login novamente.");
+      setSaving(false);
+      return;
+    }
+
+    const ok = Boolean(ageRange && mainGoal && mainReason);
+    if (!ok) {
+      setMsg("Preencha todas as informações para continuar.");
+      setSaving(false);
+      return;
+    }
+
     try {
       const patch = {
         age_range: ageRange,
@@ -733,7 +751,7 @@ function Wizard({ session, profile, onProfileSaved }) {
         main_reason: mainReason,
       };
       const fresh = await saveProfileAndReload(userId, patch);
-      onProfileSaved(fresh);
+      onProfileSaved?.(fresh);
       nav("/patologias", { replace: true });
     } catch (err) {
       setMsg(err?.message || "Erro ao salvar wizard.");
@@ -869,13 +887,28 @@ function Patologias({ session, profile, onProfileSaved }) {
   }
 
   async function handleSave() {
+    if (saving) return;
+
     setSaving(true);
     setMsg("");
+
+    if (!userId) {
+      setMsg("Sessão inválida. Faça login novamente.");
+      setSaving(false);
+      return;
+    }
+
+    if (!Array.isArray(selectedConditions) || selectedConditions.length === 0) {
+      setMsg("Selecione pelo menos uma opção para continuar.");
+      setSaving(false);
+      return;
+    }
+
     try {
       const patch = { conditions: selectedConditions };
       const fresh = await saveProfileAndReload(userId, patch);
       const nextProfile = fresh ?? { ...(profile || {}), ...patch };
-      onProfileSaved(nextProfile);
+      onProfileSaved?.(nextProfile);
       nav("/app", { replace: true });
     } catch (err) {
       setMsg(err?.message || "Erro ao salvar patologias.");
@@ -905,7 +938,7 @@ function Patologias({ session, profile, onProfileSaved }) {
         <div className="flex flex-wrap gap-2 mt-4">
           <button
             type="button"
-            onClick={() => nav("/app", { replace: true })}
+            onClick={() => nav("/wizard", { replace: true })}
             className={GHOST_BUTTON_CLASS}
           >
             Voltar
@@ -925,207 +958,6 @@ function Patologias({ session, profile, onProfileSaved }) {
   );
 }
 
-// -------------------- AppDashboard (home do app após questionários) --------------------
-function AppDashboard({ session, profile }) {
-  const nav = useNavigate();
-  const whatsappMessage = encodeURIComponent(
-    `Olá sou ${profile?.full_name ?? "um paciente"}, gostaria de mais informações !`
-  );
-  const [whatsappActive, setWhatsappActive] = useState(false);
-
-  const cards = [
-    {
-      title: "Conteúdos educativos personalizados",
-      emoji: "📚",
-      desc: "Guias, e-books e conteúdos recomendados.",
-      to: "/app/conteudos",
-    },
-    {
-      title: "Produtos",
-      emoji: "💧",
-      desc: "Catálogo de óleos e kits (MVP).",
-      to: "/app/produtos",
-    },
-    {
-      title: "Agende uma consulta online",
-      emoji: "🩺",
-      desc: "Escolha um médico e inicie um atendimento.",
-      to: "/app/medicos",
-    },
-    {
-      title: "Meu perfil",
-      emoji: "🧾",
-      desc: "Revise e edite seus dados e preferências.",
-      to: "/app/perfil",
-    },
-    {
-      title: "Meu histórico",
-      emoji: "🕘",
-      desc: "Veja o que você respondeu e atualize quando quiser.",
-      to: "/app/historico",
-    },
-  ];
-
-  const quickLinks = [
-    { title: "Receitas", emoji: "🧾", to: "/app/receitas" },
-    { title: "Pedidos", emoji: "📦", to: "/app/pedidos" },
-    { title: "Alertas de uso", emoji: "⚠️", to: "/app/alertas" },
-  ];
-
-  const cardButtonStyle = {
-    textAlign: "left",
-    width: "100%",
-    padding: 16,
-    borderRadius: 16,
-    border: "1px solid rgba(0,0,0,0.12)",
-    background: "#fff",
-    cursor: "pointer",
-    color: "#111",
-    fontWeight: 700,
-  };
-
-  const hasHealth = profile?.health_triage && Object.keys(normalizeTriage(profile.health_triage)).length > 0;
-  const hasEmotional = profile?.emotional_triage && Object.keys(normalizeTriage(profile.emotional_triage)).length > 0;
-
-  return (
-    <div style={{ display: "grid", gap: 16 }}>
-      <Card>
-        <p style={{ marginTop: 0, opacity: 0.75 }}>
-          Bem-vindo{profile?.full_name ? `, ${profile.full_name.split(" ")[0]}` : ""}. Escolha por onde começar.
-        </p>
-      </Card>
-
-      <Card>
-        <h3 style={{ marginTop: 0, color: "#2e7d32" }}>Recomendado para você</h3>
-        <p style={{ marginTop: 6, opacity: 0.75 }}>
-          {profile?.main_goal ? (
-            <>
-              Objetivo principal: <b>{profile.main_goal}</b>
-            </>
-          ) : (
-            <>Defina um objetivo para personalizar sua jornada.</>
-          )}
-        </p>
-
-        <div style={{ display: "grid", gap: 10, marginTop: 12 }}>
-          {!profile?.main_goal ? (
-            <button
-              type="button"
-              className={`${PRIMARY_BUTTON_CLASS} w-full text-left`}
-              onClick={() => nav("/app/objetivos")}
-            >
-              Definir objetivo
-            </button>
-          ) : null}
-
-          {!hasHealth ? (
-            <button
-              type="button"
-              className={`${PRIMARY_BUTTON_CLASS} w-full text-left`}
-              onClick={() => nav("/app/saude")}
-            >
-              Responder triagem de saúde
-            </button>
-          ) : null}
-
-          {hasHealth && !hasEmotional ? (
-            <button
-              type="button"
-              className={`${PRIMARY_BUTTON_CLASS} w-full text-left`}
-              onClick={() => nav("/app/emocional")}
-            >
-              Responder triagem emocional
-            </button>
-          ) : null}
-
-          {hasHealth && hasEmotional ? (
-            <div style={{ opacity: 0.75, fontSize: 14 }}>✅ Triagens preenchidas. Você pode atualizar quando quiser.</div>
-          ) : null}
-        </div>
-      </Card>
-
-      <Card>
-        <div style={{ display: "grid", gap: 12 }}>
-          {cards.map((c) => (
-            <button
-              key={c.to}
-              type="button"
-              className="gp-card-link"
-              onClick={() => nav(c.to)}
-              style={cardButtonStyle}
-            >
-              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                <div style={{ fontSize: 44, lineHeight: "44px" }}>{c.emoji}</div>
-                <div>
-                  <div style={{ fontWeight: 900, fontSize: 18 }}>{c.title}</div>
-                  <div style={{ marginTop: 6, opacity: 0.75 }}>{c.desc}</div>
-                </div>
-              </div>
-            </button>
-          ))}
-        </div>
-      </Card>
-
-      <Card>
-        <h3 style={{ marginTop: 0 }}>Acesso rápido</h3>
-        <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
-          {quickLinks.map((q) => (
-            <button
-              key={q.to}
-              type="button"
-              className="gp-card-link"
-              onClick={() => nav(q.to)}
-              style={{
-                width: 100,
-                height: 100,
-                borderRadius: 999,
-                border: "2px solid #7fb069",
-                background: "#fff",
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 4,
-                cursor: "pointer",
-                boxShadow: "0 6px 16px rgba(127, 176, 105, 0.18)",
-                color: "#2f5d36",
-              }}
-            >
-              <div style={{ fontSize: 28, lineHeight: "28px" }}>{q.emoji}</div>
-              <div style={{ fontWeight: 700, fontSize: 11, textAlign: "center" }}>{q.title}</div>
-            </button>
-          ))}
-        </div>
-      </Card>
-
-      <Card>
-        <div style={{ textAlign: "center" }}>
-          <button
-            type="button"
-            onClick={() => {
-              setWhatsappActive(true);
-              window.open(`https://wa.me/5531995298192?text=${whatsappMessage}`, "_blank", "noopener");
-            }}
-            style={{
-              borderRadius: 999,
-              border: "2px solid #7fb069",
-              padding: "14px 36px",
-              fontWeight: 700,
-              fontSize: 16,
-              cursor: "pointer",
-              background: whatsappActive ? "#43a047" : "#fff",
-              color: whatsappActive ? "#fff" : "#2f5d36",
-              boxShadow: whatsappActive ? "0 6px 12px rgba(67, 160, 71, 0.2)" : "0 6px 16px rgba(127, 176, 105, 0.15)",
-              transition: "background 200ms, color 200ms",
-            }}
-          >
-            Fale com especialista
-          </button>
-        </div>
-      </Card>
-    </div>
-  );
-}
 
 // -------------------- Stubs (páginas do app) --------------------
 function Conteudos({ session, isAdmin }) {
@@ -1142,16 +974,25 @@ function Conteudos({ session, isAdmin }) {
               Artigos, vídeos e e‑books para apoiar sua jornada. (placeholder)
             </p>
           </div>
-
-          {admin ? (
+          <div className="flex flex-wrap gap-2">
             <button
               type="button"
-              className={`${PRIMARY_BUTTON_CLASS} w-full`}
-              onClick={() => nav("/app/admin/conteudos")}
+              className={GHOST_BUTTON_CLASS}
+              onClick={() => nav("/app", { replace: true })}
             >
-              Admin
+              Voltar
             </button>
-          ) : null}
+
+            {admin ? (
+              <button
+                type="button"
+                className={PRIMARY_BUTTON_CLASS}
+                onClick={() => nav("/app/admin/conteudos", { replace: true })}
+              >
+                Admin
+              </button>
+            ) : null}
+          </div>
         </div>
       </Card>
 
@@ -1319,6 +1160,7 @@ function Produtos() {
 }
 
 function Pagamentos() {
+  const nav = useNavigate();
   return (
     <div style={{ display: "grid", gap: 16 }}>
       <Card>
@@ -1326,6 +1168,11 @@ function Pagamentos() {
         <p style={{ opacity: 0.75, marginTop: 6 }}>
           Checkout (placeholder). Aqui vamos integrar Pix, cartão e Mercado Pago.
         </p>
+        <div className="flex flex-wrap gap-2 mt-3">
+          <button type="button" onClick={() => nav("/app", { replace: true })} className={GHOST_BUTTON_CLASS}>
+            Voltar
+          </button>
+        </div>
       </Card>
 
       <Card>
@@ -1427,47 +1274,6 @@ function Carrinho() {
   );
 }
 
-function Medicos() {
-  const doctors = [
-    { name: "Dra. Camila Rocha", specialty: "Clínica Integrativa", city: "Belo Horizonte" },
-    { name: "Dr. Paulo Mendes", specialty: "Neurologia", city: "São Paulo" },
-    { name: "Dra. Júlia Santos", specialty: "Psiquiatria", city: "Rio de Janeiro" },
-  ];
-
-  return (
-    <Card>
-      <h2 style={{ marginTop: 0 }}>Médicos credenciados</h2>
-      <p style={{ opacity: 0.75 }}>Escolha um profissional para iniciar o atendimento.</p>
-
-      <div style={{ display: "grid", gap: 10, marginTop: 12 }}>
-        {doctors.map((doc) => (
-          <div
-            key={doc.name}
-            style={{
-              padding: 14,
-              borderRadius: 14,
-              border: "1px solid rgba(0,0,0,0.12)",
-              background: "#fff",
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              gap: 12,
-              flexWrap: "wrap",
-            }}
-          >
-            <div>
-              <div style={{ fontWeight: 900 }}>{doc.name}</div>
-              <div style={{ opacity: 0.75, fontSize: 13 }}>
-                {doc.specialty} • {doc.city}
-              </div>
-            </div>
-            <button type="button" className={PRIMARY_BUTTON_CLASS}>Abrir chat</button>
-          </div>
-        ))}
-      </div>
-    </Card>
-  );
-}
 
 function Receitas() {
   const nav = useNavigate();
@@ -1661,433 +1467,6 @@ function TriageEditor({ title, subtitle, fields, value, onToggle, onNote, saving
         })}
       </div>
     </Card>
-  );
-}
-
-function Perfil({ session, profile, onProfileSaved }) {
-  const nav = useNavigate();
-  const userId = session?.user?.id;
-
-  const [saving, setSaving] = useState(false);
-  const [msg, setMsg] = useState("");
-  const [errors, setErrors] = useState({});
-
-  // -------------------- Dados pessoais --------------------
-  const [fullName, setFullName] = useState(profile?.full_name ?? "");
-  const [phone, setPhone] = useState(profile?.phone ?? "+55 ");
-  const [cpf, setCpf] = useState(profile?.cpf ?? "");
-  const [birthDate, setBirthDate] = useState(profile?.birth_date ?? "");
-
-  // -------------------- Preferências (wizard) --------------------
-  const [ageRange, setAgeRange] = useState(profile?.age_range ?? "");
-  const [mainReason, setMainReason] = useState(profile?.main_reason ?? "");
-  const [mainGoal, setMainGoal] = useState(profile?.main_goal ?? "");
-
-  const [selectedConditions, setSelectedConditions] = useState(() => profile?.conditions ?? []);
-
-  // -------------------- Triagens (editáveis) --------------------
-  const [healthTriage, setHealthTriage] = useState(() => normalizeTriage(profile?.health_triage));
-  const [emotionalTriage, setEmotionalTriage] = useState(() => normalizeTriage(profile?.emotional_triage));
-
-  const goalOptions = useMemo(
-    () => [
-      "Melhora do Sono",
-      "Mais Calma",
-      "Aumento do Foco",
-      "Menos Estresse",
-      "Controle da Ansiedade",
-      "Dor Crônica",
-      "Melhora no Esporte",
-      "Aumento da Libido",
-      "Enxaqueca",
-      "Controle da TPM",
-    ],
-    []
-  );
-
-  const conditions = useMemo(
-    () => [
-      "Ansiedade",
-      "Insónia / Distúrbios do sono",
-      "Dor crónica",
-      "Fibromialgia",
-      "Enxaqueca",
-      "Depressão",
-      "Stress / Burnout",
-      "TDAH (foco e atenção)",
-      "Epilepsia / Convulsões",
-      "Espasticidade (ex: Esclerose Múltipla)",
-      "Náusea e vómitos (ex: quimioterapia)",
-      "Apetite baixo / Caquexia",
-      "Dor neuropática",
-      "Inflamação crónica",
-      "Artrite",
-      "TPM intensa",
-      "TEPT (stress pós-traumático)",
-      "Autismo (suporte de sintomas)",
-      "Glaucoma (casos específicos)",
-    ],
-    []
-  );
-
-  const healthFields = useMemo(
-    () => [
-      { key: "cabeca_intensa", label: "Dores de cabeça intensas", placeholder: "Frequência e intensidade" },
-      { key: "alimentacao", label: "Problemas com alimentação", placeholder: "Quanto tempo, e qual o problema?" },
-      { key: "acorda_cansado", label: "Acorda cansado", placeholder: "Com que frequência?" },
-      { key: "fuma", label: "Tabaco (você fuma?)", placeholder: "Com que frequência?" },
-      { key: "alcool", label: "Bebida alcoólica", placeholder: "Frequência e tipo de bebida" },
-      { key: "ja_usou_cannabis", label: "Já usou cannabis", placeholder: "Com que frequência? Há quanto tempo?" },
-      { key: "arritmia", label: "Arritmia cardíaca", placeholder: "Detalhe (se souber)" },
-      { key: "psicose", label: "Histórico de psicose/esquizofrenia", placeholder: "Explique brevemente" },
-      { key: "tratamento_atual", label: "Faz algum tratamento", placeholder: "Qual tratamento?" },
-      { key: "usa_remedios", label: "Uso frequente de remédios", placeholder: "Quais e com que frequência?" },
-      { key: "doenca_cronica", label: "Doença crônica", placeholder: "Qual?" },
-      { key: "cirurgia", label: "Cirurgia anterior", placeholder: "Qual e quando?" },
-      { key: "alergia", label: "Alergia", placeholder: "Qual alergia?" },
-    ],
-    []
-  );
-
-  const emotionalFields = useMemo(
-    () => [
-      { key: "tristeza", label: "Tristeza", placeholder: "Com qual frequência e motivo?" },
-      { key: "foco", label: "Perda de foco", placeholder: "Especifique" },
-      { key: "memoria", label: "Memória", placeholder: "Há quanto tempo e qual intensidade?" },
-      { key: "irritado_triste", label: "Irritabilidade / tristeza", placeholder: "Com que frequência?" },
-      { key: "estresse", label: "Estresse", placeholder: "Quais os motivos?" },
-      { key: "panico", label: "Episódios de pânico", placeholder: "Com que frequência e há quanto tempo?" },
-      { key: "diagnostico_psicose", label: "Diagnóstico de psicose", placeholder: "Há quanto tempo?" },
-      { key: "familia_psicose", label: "Parente com psicose", placeholder: "Qual parente?" },
-      { key: "diagnostico_ans_depr", label: "Diagnóstico ansiedade/depressão", placeholder: "Há quanto tempo?" },
-      {
-        key: "sintomas_emocionais",
-        label: "Sintomas emocionais (seleção)",
-        placeholder: "Ex: Ansiedade, sensação de vazio, estresse elevado...",
-      },
-    ],
-    []
-  );
-
-  useEffect(() => {
-    setFullName(profile?.full_name ?? "");
-    setPhone(profile?.phone ?? "+55 ");
-    setCpf(profile?.cpf ?? "");
-    setBirthDate(profile?.birth_date ?? "");
-
-    setAgeRange(profile?.age_range ?? "");
-    setMainReason(profile?.main_reason ?? "");
-    setMainGoal(profile?.main_goal ?? "");
-
-    setSelectedConditions(profile?.conditions ?? []);
-
-    setHealthTriage(normalizeTriage(profile?.health_triage));
-    setEmotionalTriage(normalizeTriage(profile?.emotional_triage));
-  }, [profile]);
-
-  function digitsOnly(v) {
-    return String(v || "").replace(/\D/g, "");
-  }
-
-  function isValidBirthDateBR(v) {
-    const s = String(v || "").trim();
-    if (!/^\d{2}\/\d{2}\/\d{4}$/.test(s)) return false;
-    const [dd, mm, yyyy] = s.split("/").map((x) => parseInt(x, 10));
-    if (!dd || !mm || !yyyy) return false;
-    if (yyyy < 1900 || yyyy > new Date().getFullYear()) return false;
-    if (mm < 1 || mm > 12) return false;
-    const lastDay = new Date(yyyy, mm, 0).getDate();
-    if (dd < 1 || dd > lastDay) return false;
-    return true;
-  }
-
-  function isValidCPF(cpfValue) {
-    const cpfDigits = digitsOnly(cpfValue);
-    if (cpfDigits.length !== 11) return false;
-    if (/^(\d)\1{10}$/.test(cpfDigits)) return false;
-
-    const calcCheck = (base, factor) => {
-      let sum = 0;
-      for (let i = 0; i < base.length; i++) sum += parseInt(base[i], 10) * (factor - i);
-      const mod = (sum * 10) % 11;
-      return mod === 10 ? 0 : mod;
-    };
-
-    const base9 = cpfDigits.slice(0, 9);
-    const d1 = calcCheck(base9, 10);
-    const base10 = cpfDigits.slice(0, 10);
-    const d2 = calcCheck(base10, 11);
-
-    return d1 === parseInt(cpfDigits[9], 10) && d2 === parseInt(cpfDigits[10], 10);
-  }
-
-  function isValidPhone(phoneValue) {
-    const d = digitsOnly(phoneValue);
-    return d.length >= 10;
-  }
-
-  function formatBirthDate(value) {
-    const digits = String(value || "").replace(/\D/g, "").slice(0, 8);
-    const parts = [];
-    if (digits.length > 0) parts.push(digits.slice(0, 2));
-    if (digits.length >= 3) parts.push(digits.slice(2, 4));
-    if (digits.length >= 5) parts.push(digits.slice(4, 8));
-    return parts.join("/");
-  }
-
-  function validateAll() {
-    const next = {};
-
-    if (!String(fullName || "").trim()) next.fullName = "Informe seu nome completo.";
-    if (!isValidPhone(phone)) next.phone = "Telefone inválido (coloque DDD).";
-    if (!isValidCPF(cpf)) next.cpf = "CPF inválido.";
-    if (!isValidBirthDateBR(birthDate)) next.birthDate = "Data inválida (DD/MM/AAAA).";
-
-    if (ageRange && !["18-24", "25-34", "35-44", "45-54", "55+"].includes(ageRange)) {
-      next.ageRange = "Faixa etária inválida.";
-    }
-
-    setErrors(next);
-    return Object.keys(next).length === 0;
-  }
-
-  function toggleCondition(item) {
-    setSelectedConditions((prev) => (prev.includes(item) ? prev.filter((x) => x !== item) : [...prev, item]));
-  }
-
-  function toggleTriage(setter, key) {
-    setter((prev) => {
-      const cur = prev[key] ?? { on: false, note: "" };
-      const nextOn = !cur.on;
-      return { ...prev, [key]: { ...cur, on: nextOn, note: nextOn ? cur.note : "" } };
-    });
-  }
-
-  function setTriageNote(setter, key, note) {
-    setter((prev) => {
-      const cur = prev[key] ?? { on: false, note: "" };
-      return { ...prev, [key]: { ...cur, note } };
-    });
-  }
-
-  async function handleSave(e) {
-    e.preventDefault();
-    if (saving) return;
-    setMsg("");
-
-    const ok = validateAll();
-    if (!ok) return;
-
-    setSaving(true);
-    try {
-      const patch = {
-        full_name: String(fullName || "").trim(),
-        phone: String(phone || "").trim(),
-        cpf: String(cpf || "").trim(),
-        birth_date: String(birthDate || "").trim(),
-        age_range: ageRange || null,
-        main_reason: mainReason || null,
-        main_goal: mainGoal || null,
-        conditions: selectedConditions,
-        health_triage: healthTriage,
-        emotional_triage: emotionalTriage,
-      };
-
-      const fresh = await saveProfileAndReload(userId, patch);
-      onProfileSaved?.(fresh);
-      setMsg("✅ Perfil atualizado com sucesso.");
-    } catch (err) {
-      setMsg(err?.message || "Erro ao salvar perfil.");
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  const canSave = !saving;
-
-
-  return (
-    <div style={{ display: "grid", gap: 16 }}>
-      <Card>
-        <h2 style={{ marginTop: 0 }}>Meu perfil</h2>
-        <p style={{ opacity: 0.75, marginTop: 6 }}>
-          Atualize seus dados e preferências. Você pode ajustar quando quiser.
-        </p>
-      </Card>
-
-      <Card>
-        <form onSubmit={handleSave} style={{ display: "grid", gap: 12 }}>
-          <h3 style={{ margin: 0 }}>Dados pessoais</h3>
-
-          <Field label="Nome completo">
-            <Input value={fullName} onChange={(e) => setFullName(e.target.value)} disabled={saving} />
-            {errors.fullName ? <div style={{ color: "#b00020", fontSize: 12, marginTop: 6 }}>{errors.fullName}</div> : null}
-          </Field>
-
-          <Field label="Telefone">
-            <Input value={phone} onChange={(e) => setPhone(e.target.value)} disabled={saving} placeholder="+55 31 99999-9999" />
-            {errors.phone ? <div style={{ color: "#b00020", fontSize: 12, marginTop: 6 }}>{errors.phone}</div> : null}
-          </Field>
-
-          <Field label="CPF">
-            <Input value={cpf} onChange={(e) => setCpf(e.target.value)} disabled={saving} placeholder="000.000.000-00" />
-            {errors.cpf ? <div style={{ color: "#b00020", fontSize: 12, marginTop: 6 }}>{errors.cpf}</div> : null}
-          </Field>
-
-          <Field label="Data de nascimento">
-            <Input value={birthDate} onChange={(e) => setBirthDate(formatBirthDate(e.target.value))} disabled={saving} placeholder="DD/MM/AAAA" />
-            {errors.birthDate ? <div style={{ color: "#b00020", fontSize: 12, marginTop: 6 }}>{errors.birthDate}</div> : null}
-          </Field>
-
-          <hr style={{ margin: "8px 0", opacity: 0.2 }} />
-
-          <h3 style={{ margin: 0 }}>Preferências (triagem)</h3>
-
-          <Field label="Faixa etária">
-            <select
-              value={ageRange}
-              onChange={(e) => setAgeRange(e.target.value)}
-              disabled={saving}
-              style={{ ...styles.input, appearance: "auto" }}
-            >
-              <option value="">—</option>
-              <option value="18-24">18-24</option>
-              <option value="25-34">25-34</option>
-              <option value="35-44">35-44</option>
-              <option value="45-54">45-54</option>
-              <option value="55+">55+</option>
-            </select>
-            {errors.ageRange ? <div style={{ color: "#b00020", fontSize: 12, marginTop: 6 }}>{errors.ageRange}</div> : null}
-          </Field>
-
-          <Field label="Motivo principal">
-            <select
-              value={mainReason}
-              onChange={(e) => setMainReason(e.target.value)}
-              disabled={saving}
-              style={{ ...styles.input, appearance: "auto" }}
-            >
-              <option value="">—</option>
-              <option value="Saúde">Saúde</option>
-              <option value="Bem-estar">Bem-estar</option>
-              <option value="Curiosidade">Curiosidade</option>
-              <option value="Lazer">Lazer</option>
-              <option value="Outro">Outro</option>
-            </select>
-          </Field>
-
-          <Field label="Objetivo principal">
-            <select
-              value={mainGoal}
-              onChange={(e) => setMainGoal(e.target.value)}
-              disabled={saving}
-              style={{ ...styles.input, appearance: "auto" }}
-            >
-              <option value="">—</option>
-              {goalOptions.map((g) => (
-                <option key={g} value={g}>{g}</option>
-              ))}
-            </select>
-          </Field>
-
-          <Field label="Condições selecionadas">
-            <div className="gaia-force-text">
-              <div style={styles.choiceGrid2}>
-                {conditions.map((c) => (
-                  <SelectButton
-                    key={c}
-                    className="gp-card-link"
-                    active={selectedConditions.includes(c)}
-                    title={c}
-                    onClick={() => toggleCondition(c)}
-                  />
-                ))}
-              </div>
-              <div style={{ marginTop: 8, opacity: 0.75, fontSize: 13 }}>
-                Selecionadas: <b>{selectedConditions.length}</b>
-              </div>
-            </div>
-          </Field>
-
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="submit"
-              disabled={!canSave}
-              className={`${PRIMARY_BUTTON_CLASS} flex-1`}
-            >
-              {saving ? "Salvando..." : "Salvar alterações"}
-            </button>
-
-            <button
-              type="button"
-              disabled={saving}
-              onClick={async () => {
-                if (saving) return;
-                try {
-                  setSaving(true);
-
-                  const patch = {
-                    full_name: String(fullName || "").trim(),
-                    phone: String(phone || "").trim(),
-                    cpf: String(cpf || "").trim(),
-                    birth_date: String(birthDate || "").trim(),
-                    age_range: ageRange || null,
-                    main_reason: mainReason || null,
-                    main_goal: mainGoal || null,
-                    conditions: selectedConditions,
-                    health_triage: healthTriage,
-                    emotional_triage: emotionalTriage,
-                  };
-
-                  const fresh = await saveProfileAndReload(userId, patch);
-                  onProfileSaved?.(fresh);
-                  nav("/app", { replace: true });
-                } catch (err) {
-                  setMsg(err?.message || "Erro ao salvar perfil.");
-                } finally {
-                  setSaving(false);
-                }
-              }}
-              className={`${GHOST_BUTTON_CLASS} flex-1`}
-            >
-              Salvar e voltar
-            </button>
-          </div>
-
-          {msg ? (
-            <div style={{ marginTop: 4, color: msg.startsWith("✅") ? "#2e7d32" : "#b00020", fontSize: 13 }}>
-              {msg}
-            </div>
-          ) : null}
-        </form>
-      </Card>
-
-      <TriageEditor
-        title="Triagem de saúde"
-        subtitle="Toque em um item para ativar/desativar. Quando ativo, você pode escrever detalhes abaixo."
-        fields={healthFields}
-        value={healthTriage}
-        onToggle={(k) => () => toggleTriage(setHealthTriage, k)}
-        onNote={(k, v) => setTriageNote(setHealthTriage, k, v)}
-        saving={saving}
-      />
-
-      <TriageEditor
-        title="Triagem emocional"
-        subtitle="Escolha o que faz sentido e detalhe quando quiser."
-        fields={emotionalFields}
-        value={emotionalTriage}
-        onToggle={(k) => () => toggleTriage(setEmotionalTriage, k)}
-        onNote={(k, v) => setTriageNote(setEmotionalTriage, k, v)}
-        saving={saving}
-      />
-
-      <Card>
-        <p style={{ margin: 0, opacity: 0.75, fontSize: 13 }}>
-          Dica: essas informações são suas. Você pode voltar e editar quando quiser.
-        </p>
-      </Card>
-    </div>
   );
 }
 
@@ -2835,61 +2214,6 @@ function EmotionalSymptoms({ session, profile, onProfileSaved }) {
 }
 
 
-// -------------------- Guards --------------------
-function RequireAuth({ session, children }) {
-  if (!session?.user) return <Navigate to="/auth" replace />;
-  return children;
-}
-
-function RequireBasicProfile({ session, profile, children }) {
-  if (!session?.user) return <Navigate to="/auth" replace />;
-  if (!profile || !isPersonalComplete(profile)) return <Navigate to="/perfil-clinico" replace />;
-  return children;
-}
-
-function RequireProfileComplete({ session, profile, loadingProfile, profileError, children }) {
-  const nav = useNavigate();
-
-  if (!session?.user) return <Navigate to="/auth" replace />;
-
-  // Se deu erro ao carregar perfil (timeout, RLS, rede, etc.), não fica preso em "Carregando..."
-  if (profileError) {
-    return (
-      <Card>
-        <h3 style={{ marginTop: 0 }}>Não consegui carregar seu perfil</h3>
-        <p style={{ opacity: 0.8, marginTop: 6 }}>
-          {String(profileError?.message || profileError)}
-        </p>
-        <div className="flex flex-wrap gap-2 mt-4">
-          <button type="button" className={PRIMARY_BUTTON_CLASS} onClick={() => nav(0)}>
-            Tentar novamente
-          </button>
-          <Link to="/auth" className={`${GHOST_BUTTON_CLASS} inline-flex items-center no-underline`}>
-            Ir para login
-          </Link>
-        </div>
-      </Card>
-    );
-  }
-
-  // Enquanto está carregando, mostra loading
-  if (loadingProfile) {
-    return (
-      <Card>
-        <div style={{ opacity: 0.75 }}>Carregando...</div>
-      </Card>
-    );
-  }
-
-  if (!profile) return <Navigate to="/perfil-clinico" replace />;
-
-  if (!isPersonalComplete(profile)) return <Navigate to="/perfil-clinico" replace />;
-  if (!isWizardComplete(profile)) return <Navigate to="/wizard" replace />;
-  if (!hasConditionsSelected(profile)) return <Navigate to="/patologias" replace />;
-
-  return children;
-}
-
 // -------------------- App (carrega session/profile + rotas) --------------------
 export default function App() {
   const navigate = useNavigate();
@@ -2898,11 +2222,17 @@ export default function App() {
   const [loadingProfile, setLoadingProfile] = useState(false);
   const [profileError, setProfileError] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [sessionLoading, setSessionLoading] = useState(true);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data?.session ?? null);
-    });
+    supabase.auth
+      .getSession()
+      .then(({ data }) => {
+        setSession(data?.session ?? null);
+      })
+      .finally(() => {
+        setSessionLoading(false);
+      });
 
     const { data: listener } = supabase.auth.onAuthStateChange((_e, s) => {
       setSession(s);
@@ -2924,65 +2254,80 @@ export default function App() {
       .finally(() => setLoadingProfile(false));
   }, [session]);
 
+  if (sessionLoading) {
+    return (
+      <>
+        <div style={{ color: "red", padding: 20 }}>APP MONTADO</div>
+        <div style={{ padding: 12, color: "#2f5d36" }}>Carregando…</div>
+      </>
+    );
+  }
+
   return (
-    <Routes>
-      <Route path="/" element={<Navigate to={session ? "/start" : "/auth"} replace />} />
+    <>
+      <div style={{ color: "red", padding: 20 }}>APP MONTADO</div>
+      <Routes>
+        <Route element={<PhoneFrameLayout />}>
+          <Route path="/" element={<Navigate to={session ? "/start" : "/auth"} replace />} />
 
-      <Route path="/auth" element={<Welcome />} />
-      <Route path="/conteudos" element={<PublicConteudos />} />
-      <Route path="/login" element={<Login />} />
-      <Route path="/reset-password" element={<ResetPassword />} />
-      <Route path="/criar-conta" element={<Signup />} />
+          <Route path="/auth" element={<Welcome />} />
+          <Route path="/conteudos" element={<PublicConteudos />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/criar-conta" element={<Signup />} />
 
-      <Route
-        path="/start"
-        element={
-          <ProfileGate
-            session={session}
-            profile={profile}
-            loadingProfile={loadingProfile}
-            profileError={profileError}
+          <Route
+            path="/start"
+            element={
+              <ProfileGate
+                session={session}
+                profile={profile}
+                loadingProfile={loadingProfile}
+                profileError={profileError}
+              />
+            }
           />
-        }
-      />
 
-      <Route
-        path="/perfil-clinico"
-        element={
-          <ClinicalProfile
-            session={session}
-            profile={profile}
-            onProfileSaved={setProfile}
+          <Route
+            path="/perfil-clinico"
+            element={
+              <ClinicalProfile
+                session={session}
+                profile={profile}
+                onProfileSaved={setProfile}
+              />
+            }
           />
-        }
-      />
 
-      <Route
-        path="/wizard"
-        element={
-          <Wizard
-            session={session}
-            profile={profile}
-            onProfileSaved={setProfile}
+          <Route
+            path="/wizard"
+            element={
+              <Wizard
+                session={session}
+                profile={profile}
+                onProfileSaved={setProfile}
+              />
+            }
           />
-        }
-      />
 
-      <Route
-        path="/patologias"
-        element={
-          <Patologias
-            session={session}
-            profile={profile}
-            onProfileSaved={setProfile}
+          <Route
+            path="/patologias"
+            element={
+              <Patologias
+                session={session}
+                profile={profile}
+                onProfileSaved={setProfile}
+              />
+            }
           />
-        }
-      />
+        </Route>
 
-      <Route element={<Layout />}>
-        <Route path="/app">
+        <Route path="/app" element={<Layout />}>
           <Route index element={<AppDashboard session={session} profile={profile} />} />
-          <Route path="perfil" element={<div style={{ padding: 20 }}>PERFIL ROTA OK</div>} />
+          <Route
+            path="perfil"
+            element={<Perfil session={session} profile={profile} onProfileSaved={setProfile} />}
+          />
           <Route path="historico" element={<Historico profile={profile} />} />
           <Route path="produtos" element={<Produtos />} />
           <Route path="carrinho" element={<Carrinho />} />
@@ -2992,13 +2337,22 @@ export default function App() {
           <Route path="receitas" element={<Receitas />} />
           <Route path="pedidos" element={<Pedidos />} />
           <Route path="alertas" element={<AlertasUso />} />
-          <Route path="saude" element={<HealthTriage session={session} profile={profile} onProfileSaved={setProfile} />} />
-          <Route path="emocional" element={<EmotionalTriage session={session} profile={profile} onProfileSaved={setProfile} />} />
-          <Route path="emocional/sintomas" element={<EmotionalSymptoms session={session} profile={profile} onProfileSaved={setProfile} />} />
+          <Route
+            path="saude"
+            element={<HealthTriage session={session} profile={profile} onProfileSaved={setProfile} />}
+          />
+          <Route
+            path="emocional"
+            element={<EmotionalTriage session={session} profile={profile} onProfileSaved={setProfile} />}
+          />
+          <Route
+            path="emocional/sintomas"
+            element={<EmotionalSymptoms session={session} profile={profile} onProfileSaved={setProfile} />}
+          />
         </Route>
-      </Route>
 
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </>
   );
 }
