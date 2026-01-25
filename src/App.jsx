@@ -2982,7 +2982,7 @@ export default function App() {
       <Route element={<Layout />}>
         <Route path="/app">
           <Route index element={<AppDashboard session={session} profile={profile} />} />
-          <Route path="perfil" element={<Perfil session={session} profile={profile} onProfileSaved={setProfile} />} />
+          <Route path="perfil" element={<div style={{ padding: 20 }}>PERFIL ROTA OK</div>} />
           <Route path="historico" element={<Historico profile={profile} />} />
           <Route path="produtos" element={<Produtos />} />
           <Route path="carrinho" element={<Carrinho />} />
