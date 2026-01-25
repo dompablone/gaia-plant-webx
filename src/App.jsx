@@ -16,6 +16,7 @@ const GHOST_BUTTON_CLASS =
 const INPUT_CLASS =
   "w-full rounded-xl border border-neutral-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500";
 import Layout from "./components/Layout.jsx";
+import SelectButton from "./components/ui/SelectButton.jsx";
 
 /**
  * FLUXO (OFICIAL)
