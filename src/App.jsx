@@ -2257,7 +2257,7 @@ export default function App() {
   if (sessionLoading) {
     return (
       <PhoneFrameLayout>
-        <div style={{ color: "red", padding: 20 }}>APP MONTADO</div>
+      
         <div style={{ padding: 12, color: "#2f5d36" }}>Carregando…</div>
       </PhoneFrameLayout>
     );
@@ -2265,7 +2265,7 @@ export default function App() {
 
   return (
     <PhoneFrameLayout>
-      <div style={{ color: "red", padding: 20 }}>APP MONTADO</div>
+      
       <Routes>
         <Route path="/" element={<Navigate to={session ? "/start" : "/auth"} replace />} />
 
