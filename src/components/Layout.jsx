@@ -17,36 +17,32 @@ function Frame({ children }) {
 export function PhoneFrameLayout({ children }) {
   return (
     <Frame>
-      <div className="px-4 py-4">{children}</div>
+      <div className="px-4 py-4">{children ?? <Outlet />}</div>
     </Frame>
   );
 }
 
 export default function Layout({ children }) {
   return (
-    <Frame>
-      <header className="sticky top-0 z-10 border-b border-neutral-200 bg-neutral-50/90 px-4 py-3 backdrop-blur">
-        <div className="flex items-center justify-between gap-3">
-          <NavLink to="/app" className="flex items-center gap-2 min-w-0">
-            <img src={GAIA_ICON} alt="Gaia Plant" className="h-7 w-7 shrink-0" />
-            <span className="text-sm font-semibold text-neutral-900 truncate">Gaia Plant</span>
+    <>
+      <header className="sticky top-0 z-10 border-b border-neutral-200 bg-neutral-50/90 backdrop-blur">
+        <div className="mx-auto flex max-w-md items-center justify-between px-4 py-2">
+          <NavLink to="/app" className="flex items-center gap-2">
+            <img src={GAIA_ICON} alt="Gaia Plant" className="h-6 w-6" />
+            <span className="text-sm font-semibold text-neutral-900">Gaia Plant</span>
           </NavLink>
 
-          <div className="flex items-center gap-2 shrink-0">
+       <div className="flex items-center justify-between gap-3 flex-nowrap">
             <NavLink
               to="/app/produtos"
-              className="flex h-11 w-11 items-center justify-center rounded-full border border-neutral-300 bg-white text-xl text-neutral-900 shadow-sm"
-              aria-label="Carrinho"
-              title="Carrinho"
+              className="flex h-9 w-9 items-center justify-center rounded-full border border-neutral-300 bg-white text-lg shadow-sm"
             >
               🛒
             </NavLink>
 
             <NavLink
               to="/app/perfil"
-              className="flex h-11 w-11 items-center justify-center rounded-full border border-neutral-300 bg-white text-xl text-neutral-900 shadow-sm"
-              aria-label="Meu perfil"
-              title="Meu perfil"
+              className="flex h-9 w-9 items-center justify-center rounded-full border border-neutral-300 bg-white text-lg shadow-sm"
             >
               👤
             </NavLink>
@@ -60,9 +56,7 @@ export default function Layout({ children }) {
                   window.location.assign("/login");
                 }
               }}
-              className="rounded-full border-2 border-emerald-600 bg-white px-4 py-2 text-sm font-semibold text-emerald-700 shadow-sm"
-              aria-label="Sair"
-              title="Sair"
+              className="rounded-full border border-emerald-600 px-3 py-1.5 text-xs font-semibold text-emerald-700 bg-white"
             >
               Sair
             </button>
@@ -70,7 +64,9 @@ export default function Layout({ children }) {
         </div>
       </header>
 
-      <main className="px-4 py-4">{children ?? <Outlet />}</main>
-    </Frame>
+      <main className="px-4 py-4">
+        {children ?? <Outlet />}
+      </main>
+    </>
   );
 }
