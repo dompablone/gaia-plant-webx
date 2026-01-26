@@ -1,43 +1,54 @@
+import React from "react";
 import { Outlet, NavLink } from "react-router-dom";
 
 import { supabase } from "../lib/supabase.js";
 import GAIA_ICON from "../assets/gaia-icon.png";
 
-// Wrapper usado para forçar o app inteiro em “tamanho de telefone” mesmo no desktop
-export function PhoneFrameLayout({ children }) {
+function Frame({ children }) {
   return (
-    <div className="min-h-screen bg-neutral-50">
-      <div className="mx-auto w-full max-w-md px-4">{children}</div>
+    <div className="min-h-screen bg-neutral-100 flex justify-center px-3 py-6">
+      <div className="w-full max-w-md bg-neutral-50 border border-neutral-200 rounded-[28px] shadow-xl overflow-hidden">
+        {children}
+      </div>
     </div>
   );
 }
 
-function PhoneFrame({ children }) {
+export function PhoneFrameLayout({ children }) {
   return (
-    <div className="min-h-screen bg-neutral-50">
-      <div className="mx-auto w-full max-w-md px-4">{children ?? <Outlet />}</div>
-    </div>
+    <Frame>
+      <div className="px-4 py-4">{children}</div>
+    </Frame>
   );
 }
 
 export default function Layout({ children }) {
   return (
-    <PhoneFrame>
-      <header className="sticky top-0 z-10 -mx-4 border-b border-neutral-200 bg-neutral-50/90 px-4 py-3 backdrop-blur">
-        <div className="flex items-center justify-between">
-          <NavLink to="/app" className="flex items-center gap-2">
-            <img src={GAIA_ICON} alt="Gaia Plant" className="h-7 w-7" />
-            <span className="text-sm font-semibold text-neutral-900">Gaia Plant</span>
+    <Frame>
+      <header className="sticky top-0 z-10 border-b border-neutral-200 bg-neutral-50/90 px-4 py-3 backdrop-blur">
+        <div className="flex items-center justify-between gap-3">
+          <NavLink to="/app" className="flex items-center gap-2 min-w-0">
+            <img src={GAIA_ICON} alt="Gaia Plant" className="h-7 w-7 shrink-0" />
+            <span className="text-sm font-semibold text-neutral-900 truncate">Gaia Plant</span>
           </NavLink>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             <NavLink
               to="/app/produtos"
-              className="flex h-14 w-14 items-center justify-center rounded-full border border-neutral-300 bg-white text-3xl text-neutral-900 shadow-sm"
+              className="flex h-11 w-11 items-center justify-center rounded-full border border-neutral-300 bg-white text-xl text-neutral-900 shadow-sm"
               aria-label="Carrinho"
               title="Carrinho"
             >
               🛒
+            </NavLink>
+
+            <NavLink
+              to="/app/perfil"
+              className="flex h-11 w-11 items-center justify-center rounded-full border border-neutral-300 bg-white text-xl text-neutral-900 shadow-sm"
+              aria-label="Meu perfil"
+              title="Meu perfil"
+            >
+              👤
             </NavLink>
 
             <button
@@ -59,7 +70,7 @@ export default function Layout({ children }) {
         </div>
       </header>
 
-      <main className="py-4">{children ?? <Outlet />}</main>
-    </PhoneFrame>
+      <main className="px-4 py-4">{children ?? <Outlet />}</main>
+    </Frame>
   );
 }
