@@ -15,18 +15,17 @@ const AGE_RANGES = [
 ];
 
 const GOAL_OPTIONS = [
-  { value: "Melhora do Sono", label: "Melhora do Sono" },
-  { value: "Mais Calma", label: "Mais Calma" },
-  { value: "Aumento do Foco", label: "Aumento do Foco" },
-  { value: "Menos Estresse", label: "Menos Estresse" },
-  { value: "Controle da Ansiedade", label: "Controle da Ansiedade" },
-  { value: "Dor Crônica", label: "Dor Crônica" },
-  { value: "Melhora no Esporte", label: "Melhora no Esporte" },
-  { value: "Aumento da Libido", label: "Aumento da Libido" },
-  { value: "Enxaqueca", label: "Enxaqueca" },
-  { value: "Controle da TPM", label: "Controle da TPM" },
+  { value: "ansiedade", label: "Ansiedade" },
+  { value: "depressao", label: "Depressão" },
+  { value: "dor_cronica", label: "Dor crônica" },
+  { value: "insonia", label: "Insônia" },
+  { value: "alzheimer", label: "Alzheimer" },
+  { value: "burnout", label: "Burnout" },
+  { value: "estresse", label: "Estresse" },
+  { value: "foco_atencao", label: "Déficit de foco / atenção" },
+  { value: "enxaqueca", label: "Enxaqueca" },
+  { value: "tpm", label: "TPM" },
 ];
-
 const HEALTH_FIELDS = [
   { key: "cabeca_intensa", label: "Dores de cabeça intensas", placeholder: "Frequência e intensidade" },
   { key: "alimentacao", label: "Problemas com alimentação", placeholder: "Quanto tempo, e qual o problema?" },
@@ -43,6 +42,7 @@ const EMOTIONAL_FIELDS = [
   { key: "foco", label: "Perde o foco facilmente?", placeholder: "Especifique" },
   { key: "memoria", label: "Tem problemas de memória?", placeholder: "Há quanto tempo e intensidade?" },
   { key: "estresse", label: "Tem problemas com estresse?", placeholder: "Quais os motivos?" },
+  
 ];
 
 function Field({ label, children }) {
@@ -262,6 +262,7 @@ export default function Perfil({ session, profile, onProfileSaved }) {
   const healthActiveCount = countActive(healthTriage);
   const emotionalActiveCount = countActive(emotionalTriage);
   const age = calculateAge(birthDate);
+  const psychosisRisk = Boolean(healthTriage?.psicose?.on);
 
   return (
     <div
@@ -338,6 +339,19 @@ export default function Perfil({ session, profile, onProfileSaved }) {
         onNote={(key, note) => setFieldNote(setHealthTriage, key, note)}
         saving={saving}
       />
+
+      {psychosisRisk ? (
+        <Card>
+          <h3 style={{ marginTop: 0, color: "#b00020" }}>⚠️ Atenção</h3>
+          <p style={{ marginTop: 8, lineHeight: 1.5, opacity: 0.9 }}>
+            Em casos de <b>psicose</b> ou histórico relacionado, produtos derivados de <b>THC</b> podem piorar sintomas em algumas pessoas.
+            É essencial procurar <b>ajuda especializada</b> e fazer acompanhamento conjunto com <b>psiquiatria</b> e equipe de saúde.
+          </p>
+          <p style={{ marginTop: 8, lineHeight: 1.5, opacity: 0.9 }}>
+            Se você estiver em crise, com pensamentos acelerados, confusão, alucinações ou delírios, procure atendimento médico imediatamente.
+          </p>
+        </Card>
+      ) : null}
 
       <TriageEditor
         title="Triagem emocional"
