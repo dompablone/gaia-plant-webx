@@ -2255,71 +2255,65 @@ export default function App() {
   }, [session]);
 
   if (sessionLoading) {
-    return (
-      <PhoneFrameLayout>
-      
-        <div style={{ padding: 12, color: "#2f5d36" }}>Carregando…</div>
-      </PhoneFrameLayout>
-    );
+    return <div style={{ padding: 12, color: "#2f5d36" }}>Carregando…</div>;
   }
 
   return (
-    <PhoneFrameLayout>
-      
-      <Routes>
-        <Route path="/" element={<Navigate to={session ? "/start" : "/auth"} replace />} />
+    <Routes>
+      <Route path="/" element={<Navigate to={session ? "/app" : "/auth"} replace />} />
 
-        <Route path="/auth" element={<Welcome />} />
-        <Route path="/conteudos" element={<PublicConteudos />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/reset-password" element={<ResetPassword />} />
-        <Route path="/criar-conta" element={<Signup />} />
+      <Route path="/auth" element={<Welcome />} />
+      <Route path="/conteudos" element={<PublicConteudos />} />
+      <Route path="/login" element={<Login />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
+      <Route path="/criar-conta" element={<Signup />} />
 
-        <Route
-          path="/start"
-          element={
-            <ProfileGate
-              session={session}
-              profile={profile}
-              loadingProfile={loadingProfile}
-              profileError={profileError}
-            />
-          }
-        />
+      <Route
+        path="/start"
+        element={
+          <ProfileGate
+            session={session}
+            profile={profile}
+            loadingProfile={loadingProfile}
+            profileError={profileError}
+          />
+        }
+      />
 
-        <Route
-          path="/perfil-clinico"
-          element={
-            <ClinicalProfile
-              session={session}
-              profile={profile}
-              onProfileSaved={setProfile}
-            />
-          }
-        />
+      <Route
+        path="/perfil-clinico"
+        element={
+          <ClinicalProfile
+            session={session}
+            profile={profile}
+            onProfileSaved={setProfile}
+          />
+        }
+      />
 
-        <Route
-          path="/wizard"
-          element={
-            <Wizard
-              session={session}
-              profile={profile}
-              onProfileSaved={setProfile}
-            />
-          }
-        />
+      <Route
+        path="/wizard"
+        element={
+          <Wizard
+            session={session}
+            profile={profile}
+            onProfileSaved={setProfile}
+          />
+        }
+      />
 
-        <Route
-          path="/patologias"
-          element={
-            <Patologias
-              session={session}
-              profile={profile}
-              onProfileSaved={setProfile}
-            />
-          }
-        />
+      <Route
+        path="/patologias"
+        element={
+          <Patologias
+            session={session}
+            profile={profile}
+            onProfileSaved={setProfile}
+          />
+        }
+      />
 
+      <Route element={<PhoneFrameLayout />}>
         <Route path="/app" element={<Layout />}>
           <Route index element={<AppDashboard session={session} profile={profile} />} />
           <Route
@@ -2348,9 +2342,9 @@ export default function App() {
             element={<EmotionalSymptoms session={session} profile={profile} onProfileSaved={setProfile} />}
           />
         </Route>
+      </Route>
 
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </PhoneFrameLayout>
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
   );
 }
