@@ -1,14 +1,19 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="icon" type="image/png" href="/gaia-icon.png" />
-    <link rel="apple-touch-icon" href="/gaia-icon.png" />
-    <title>Gaia App</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
-</html>
+import { NavLink, Outlet } from "react-router-dom";
+
+export function PhoneFrameLayout() {
+  return (
+    <div className="min-h-screen bg-neutral-100 flex justify-center">
+      <div className="w-full max-w-[430px] bg-neutral-50 border border-neutral-200 rounded-[28px] shadow-xl">
+        <Outlet />
+      </div>
+    </div>
+  );
+}
+
+export default function Layout() {
+  return (
+    <div>
+      {/* Layout content */}
+    </div>
+  );
+}

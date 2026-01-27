@@ -1,54 +1,26 @@
-import React from "react";
-import { Outlet, NavLink } from "react-router-dom";
-
-import { supabase } from "../lib/supabase.js";
-import GAIA_ICON from "../assets/gaia-icon.png";
-
 // Phone frame wrapper (mobile view on desktop)
 function Frame({ children }) {
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        width: "100%",
-        display: "flex",
-        alignItems: "flex-start",
-        justifyContent: "center",
-        padding: "24px 12px",
-        background: "#f5f6f8",
-      }}
-    >
-      <div
-        style={{
-          width: "100%",
-          maxWidth: 430,
-          minHeight: "calc(100vh - 48px)",
-          background: "#fafafa",
-          border: "1px solid rgba(0,0,0,0.12)",
-          borderRadius: 28,
-          boxShadow: "0 10px 30px rgba(0,0,0,0.12)",
-          overflow: "hidden",
-        }}
-      >
+    <div className="min-h-screen bg-neutral-100 p-0">
+      {/* #root já limita a largura, então aqui só embrulha */}
+      <div className="min-h-screen bg-neutral-50 border border-neutral-200 rounded-[28px] shadow-xl overflow-hidden">
         {children}
       </div>
     </div>
   );
 }
 // Wrapper for public/auth routes where Layout header should not appear
-export function PhoneFrameLayout() {
+export function PhoneFrameLayout({ children }) {
   return (
-    <div className="min-h-screen bg-neutral-100 flex justify-center">
-      <div className="w-full max-w-[430px] bg-neutral-50 border border-neutral-200 rounded-[28px] shadow-xl">
-        <Outlet />
-      </div>
-    </div>
+    <Frame>
+      <div className="px-4 py-4">{children ?? <Outlet />}</div>
+    </Frame>
   );
 }
 
 export default function Layout({ children }) {
   return (
-    <>
+    <Frame>
       <header className="sticky top-0 z-10 border-b border-neutral-200 bg-neutral-50/90 px-4 py-3 backdrop-blur">
         <div className="flex items-center justify-between gap-3">
           <NavLink to="/app" className="flex items-center gap-2 min-w-0">
@@ -95,6 +67,6 @@ export default function Layout({ children }) {
       </header>
 
       <main className="px-4 py-4">{children ?? <Outlet />}</main>
-    </>
+    </Frame>
   );
 }
