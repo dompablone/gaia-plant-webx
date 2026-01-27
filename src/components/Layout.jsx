@@ -1,72 +1,40 @@
-// Phone frame wrapper (mobile view on desktop)
-function Frame({ children }) {
+import React from "react";
+import { NavLink, Outlet } from "react-router-dom";
+import { supabase } from "../lib/supabase";
+import GAIA_ICON from "../assets/gaia-icon.png";
+
+export function PhoneFrameLayout() {
   return (
-    <div className="min-h-screen bg-neutral-100 p-0">
-      {/* #root já limita a largura, então aqui só embrulha */}
-      <div className="min-h-screen bg-neutral-50 border border-neutral-200 rounded-[28px] shadow-xl overflow-hidden">
-        {children}
+    <div className="min-h-screen bg-neutral-100 flex justify-center">
+      <div className="w-full max-w-[430px] bg-neutral-50 border border-neutral-200 rounded-[28px] shadow-xl">
+        <Outlet />
       </div>
     </div>
   );
 }
-// Wrapper for public/auth routes where Layout header should not appear
-export function PhoneFrameLayout({ children }) {
+
+export default function Layout() {
   return (
-    <Frame>
-      <div className="px-4 py-4">{children ?? <Outlet />}</div>
-    </Frame>
-  );
-}
+    <>
+      <header className="sticky top-0 z-10 border-b bg-neutral-50 px-4 py-3">
+        <NavLink to="/app" className="flex items-center gap-2">
+          <img src={GAIA_ICON} alt="Gaia Plant" width={16} height={16} />
+          <span className="font-semibold">Gaia Plant</span>
+        </NavLink>
 
-export default function Layout({ children }) {
-  return (
-    <Frame>
-      <header className="sticky top-0 z-10 border-b border-neutral-200 bg-neutral-50/90 px-4 py-3 backdrop-blur">
-        <div className="flex items-center justify-between gap-3">
-          <NavLink to="/app" className="flex items-center gap-2 min-w-0">
-            <img src={GAIA_ICON} alt="Gaia Plant" className="shrink-0" style={{ width: 16, height: 16 }} />
-            <span className="text-sm font-semibold text-neutral-900 truncate">Gaia Plant</span>
-          </NavLink>
-
-          <div className="flex items-center gap-2 shrink-0">
-            <NavLink
-              to="/app/produtos"
-              className="flex h-10 w-10 items-center justify-center rounded-full border border-emerald-200 bg-white text-xl text-neutral-900 shadow-sm"
-              aria-label="Carrinho"
-              title="Carrinho"
-            >
-              🛒
-            </NavLink>
-
-            <NavLink
-              to="/app/perfil"
-              className="flex h-10 w-10 items-center justify-center rounded-full border border-neutral-300 bg-white text-xl text-neutral-900 shadow-sm"
-              aria-label="Meu perfil"
-              title="Meu perfil"
-            >
-              👤
-            </NavLink>
-
-            <button
-              type="button"
-              onClick={async () => {
-                try {
-                  await supabase.auth.signOut();
-                } finally {
-                  window.location.assign("/login");
-                }
-              }}
-              className="rounded-full border border-emerald-200 bg-white px-3 py-1.5 text-xs font-semibold text-emerald-700 shadow-sm"
-              aria-label="Sair"
-              title="Sair"
-            >
-              Sair
-            </button>
-          </div>
-        </div>
+        <button
+          onClick={async () => {
+            await supabase.auth.signOut();
+            window.location.assign("/login");
+          }}
+        >
+          Sair
+        </button>
       </header>
 
-      <main className="px-4 py-4">{children ?? <Outlet />}</main>
-    </Frame>
+      <main className="px-4 py-4">
+        <Outlet />
+      </main>
+    </>
   );
 }
