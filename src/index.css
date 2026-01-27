@@ -2,3 +2,17 @@
 @tailwind components;
 @tailwind utilities;
 
+body {
+  background: #f5f6f8;
+  color: #111;
+}
+
+.gaia-force-text {
+  color: #111;
+}
+
+.gaia-viewport {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
