@@ -26,6 +26,7 @@ const GOAL_OPTIONS = [
   { value: "enxaqueca", label: "Enxaqueca" },
   { value: "tpm", label: "TPM" },
 ];
+
 const HEALTH_FIELDS = [
   { key: "cabeca_intensa", label: "Dores de cabeça intensas", placeholder: "Frequência e intensidade" },
   { key: "alimentacao", label: "Problemas com alimentação", placeholder: "Quanto tempo, e qual o problema?" },
@@ -42,7 +43,6 @@ const EMOTIONAL_FIELDS = [
   { key: "foco", label: "Perde o foco facilmente?", placeholder: "Especifique" },
   { key: "memoria", label: "Tem problemas de memória?", placeholder: "Há quanto tempo e intensidade?" },
   { key: "estresse", label: "Tem problemas com estresse?", placeholder: "Quais os motivos?" },
-  
 ];
 
 function Field({ label, children }) {
@@ -285,8 +285,7 @@ export default function Perfil({ session, profile, onProfileSaved }) {
           <div>Data de nascimento: {birthDate || "—"}</div>
           <div>Idade: {age !== null ? `${age} anos` : "—"}</div>
           <div style={{ marginTop: 8, fontSize: 13, opacity: 0.8 }}>
-            Condições selecionadas: {conditionCount} • Saúde ativa: {healthActiveCount} • Emocional ativo:{" "}
-            {emotionalActiveCount}
+            Condições selecionadas: {conditionCount} • Saúde ativa: {healthActiveCount} • Emocional ativo: {emotionalActiveCount}
           </div>
         </div>
       </Card>

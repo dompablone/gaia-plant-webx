@@ -66,26 +66,48 @@ function Input(props) {
 
 // -------------------- Auth Pages --------------------
 function Welcome() {
+  const btnBase = {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    textDecoration: "none",
+    padding: "12px 18px",
+    borderRadius: 999,
+    fontWeight: 800,
+    fontSize: 14,
+    lineHeight: 1,
+    minWidth: 230,
+    boxShadow: "0 1px 2px rgba(0,0,0,0.08)",
+  };
+
+  const btnSolid = { ...btnBase, background: "#16a34a", color: "#fff", border: "1px solid #16a34a" };
+  const btnOutline = { ...btnBase, background: "#fff", color: "#166534", border: "2px solid #16a34a" };
+  const btnMist = {
+    ...btnBase,
+    background: "rgba(22,163,74,0.10)",
+    color: "#166534",
+    border: "2px solid rgba(22,163,74,0.35)",
+  };
+
   return (
-    <div style={{ maxWidth: 360, margin: "0 auto" }}>
+    <div style={{ maxWidth: 360, margin: "0 auto", textAlign: "center", padding: "20px 16px" }}>
       <Card>
         <div style={{ textAlign: "center" }}>
-          <img src={GAIA_ICON} alt="Gaia Plant" style={{ width: 288, height: 288, marginBottom: 10 }} />
-          <h1 style={{ margin: 0, fontSize: 24 }}>Gaia Plant</h1>
+          <img src={GAIA_ICON} alt="Gaia Plant" style={{ width: 220, height: "auto", marginBottom: 10 }} />
           <p style={{ opacity: 0.75, marginTop: 8 }}>
             Faça login ou crie uma conta para continuar.
           </p>
         </div>
 
-        <div className="flex flex-wrap gap-2 justify-center mt-4">
-          <Link to="/criar-conta" className={`${PRIMARY_BUTTON_CLASS} inline-flex items-center justify-center no-underline`}>
-            Criar conta
-          </Link>
-          <Link to="/login" className={`${GHOST_BUTTON_CLASS} inline-flex items-center justify-center no-underline`}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 10, alignItems: "center", marginTop: 14 }}>
+          <Link to="/login" style={btnSolid}>
             Já tenho conta
           </Link>
-          <Link to="/conteudos" className={`${GHOST_BUTTON_CLASS} inline-flex items-center justify-center no-underline`}>
-            Entenda mais antes de se cadastrar
+          <Link to="/criar-conta" style={btnOutline}>
+            Criar conta
+          </Link>
+          <Link to="/conteudos" style={btnMist}>
+            Entenda mais antes de se cadastrar (TESTE)
           </Link>
         </div>
       </Card>
