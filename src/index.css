@@ -2,25 +2,26 @@
 @tailwind components;
 @tailwind utilities;
 
-html,
-body,
-#root {
-  width: 100%;
-  overflow-x: hidden;
+html, body, #root {
+  height: 100%;
 }
 
 body {
-  font-family: "Helvetica Neue", Arial, sans-serif;
   margin: 0;
   background: #f5f6f8;
-  min-height: 100vh;
 }
 
 #root {
+  display: flex;
+  justify-content: center;  /* centraliza horizontal */
+  align-items: center;      /* centraliza vertical */
   min-height: 100vh;
-  width: 100%;
+}
+#root {
+  min-height: 100vh;
   display: flex;
   justify-content: center;
+  align-items: center;
 }
 /* ===== MOBILE VIEW FIXO (WEB) ===== */
 .gaia-app {
@@ -139,4 +140,24 @@ textarea {
     padding: 10px 12px !important;
     font-size: 14px !important;
   }
+}
+/* ===== GAIA: MOBILE VIEW FIXO NA WEB ===== */
+.gaia-viewport{
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center; /* centraliza vertical */
+  padding: 24px 12px;
+  background: #f5f6f8;
+}
+
+.gaia-viewport > *{
+  width: 100%;
+  max-width: 430px;
+}
+
+/* opcional: se algum filho “esticar” */
+.gaia-viewport *{
+  max-width: 100%;
 }
