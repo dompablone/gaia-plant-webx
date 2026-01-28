@@ -2,7 +2,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Routes, Route, Navigate, Link, useNavigate } from "react-router-dom";
 
-import { supabase } from "./lib/supabase.js";
+import { supabase, SUPABASE_ENV_OK, SUPABASE_ENV_ERROR } from "./lib/supabase.js";
 import { fetchMyProfile, upsertMyProfile } from "./lib/profileApi.js";
 import { logWarn } from "./lib/telemetry.js";
 import { normalizeTriage, isPersonalComplete, isWizardComplete, hasConditionsSelected, getNextRoute } from "./lib/triage.js";
@@ -2244,6 +2244,27 @@ export default function App() {
   const [profileError, setProfileError] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [sessionLoading, setSessionLoading] = useState(true);
+  if (!SUPABASE_ENV_OK) {
+    return (
+      <div
+        style={{
+          minHeight: "100vh",
+          display: "grid",
+          placeItems: "center",
+          padding: 16,
+          background: "#f6f7f8",
+        }}
+      >
+        <Card>
+          <h2 style={{ marginTop: 0 }}>Configuração necessária</h2>
+          <p style={{ opacity: 0.8, lineHeight: 1.5 }}>{SUPABASE_ENV_ERROR}</p>
+          <p style={{ opacity: 0.7, fontSize: 13 }}>
+            Depois de configurar as variáveis na Vercel, faça um Redeploy.
+          </p>
+        </Card>
+      </div>
+    );
+  }
 
   useEffect(() => {
     supabase.auth
