@@ -16,3 +16,12 @@ body {
   display: flex;
   flex-direction: column;
 }
+/* ===== Gaia: safety layout (evita linhas estourando o frame) ===== */
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body { max-width: 100%; overflow-x: hidden; }
+
+#root, .gaia-viewport { max-width: 100%; overflow-x: hidden; }
+
+img, svg, canvas, video, iframe { max-width: 100%; height: auto; }
+hr { max-width: 100%; }

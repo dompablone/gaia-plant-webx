@@ -47,8 +47,18 @@ const EMOTIONAL_FIELDS = [
 
 function Field({ label, children }) {
   return (
-    <div className="mb-3">
-      <div className="text-xs font-semibold uppercase tracking-wide text-neutral-500 mb-1">{label}</div>
+    <div style={{ display: "grid", gap: 6 }}>
+      <div
+        style={{
+          fontSize: 12,
+          fontWeight: 900,
+          letterSpacing: 0.4,
+          textTransform: "uppercase",
+          color: "rgba(15, 23, 42, 0.65)",
+        }}
+      >
+        {label}
+      </div>
       {children}
     </div>
   );
@@ -82,7 +92,8 @@ const TriageNote = React.memo(function TriageNote({ initialValue, placeholder, d
       placeholder={placeholder}
       disabled={disabled}
       rows={3}
-      className={`${INPUT_CLASS} resize-none`}
+      className={INPUT_CLASS}
+      style={{ resize: "none" }}
     />
   );
 });
@@ -114,10 +125,10 @@ function TriageEditor({ title, fields, value, onToggle, onNote, saving }) {
                 style={{
                   width: "100%",
                   textAlign: "left",
-                  border: active ? "2px solid #43a047" : "2px solid rgba(0,0,0,0.12)",
+                  border: active ? "2px solid #16a34a" : "2px solid rgba(0,0,0,0.12)",
                   borderRadius: 14,
                   padding: 14,
-                  background: active ? "rgba(67,160,71,0.08)" : "#fff",
+                  background: active ? "rgba(22,163,74,0.08)" : "#fff",
                   cursor: saving ? "not-allowed" : "pointer",
                 }}
                 aria-pressed={active}
@@ -130,7 +141,7 @@ function TriageEditor({ title, fields, value, onToggle, onNote, saving }) {
                       borderRadius: 999,
                       fontSize: 12,
                       fontWeight: 900,
-                      background: active ? "#43a047" : "rgba(0,0,0,0.10)",
+                      background: active ? "#16a34a" : "rgba(0,0,0,0.10)",
                       color: active ? "#fff" : "#111",
                     }}
                   >
@@ -267,12 +278,13 @@ export default function Perfil({ session, profile, onProfileSaved }) {
   return (
     <div
       style={{
-        maxWidth: 420,
+        width: "100%",
+        maxWidth: "100%",
+        boxSizing: "border-box",
         margin: "0 auto",
         display: "grid",
         gap: 16,
-        padding: "20px 16px",
-        width: "100%",
+        padding: 16,
       }}
     >
       <Card>
@@ -318,11 +330,7 @@ export default function Perfil({ session, profile, onProfileSaved }) {
             <SelectButton value={ageRange} onChange={setAgeRange} options={AGE_RANGES} />
           </Field>
           <Field label="Motivo principal">
-            <Input
-              value={mainReason}
-              onChange={(e) => setMainReason(e.target.value)}
-              placeholder="Ex: Saúde, bem-estar, curiosidade..."
-            />
+            <Input value={mainReason} onChange={(e) => setMainReason(e.target.value)} placeholder="Ex: Saúde, bem-estar, curiosidade..." />
           </Field>
           <Field label="Objetivo principal">
             <SelectButton value={mainGoal} onChange={setMainGoal} options={GOAL_OPTIONS} />
@@ -343,8 +351,7 @@ export default function Perfil({ session, profile, onProfileSaved }) {
         <Card>
           <h3 style={{ marginTop: 0, color: "#b00020" }}>⚠️ Atenção</h3>
           <p style={{ marginTop: 8, lineHeight: 1.5, opacity: 0.9 }}>
-            Em casos de <b>psicose</b> ou histórico relacionado, produtos derivados de <b>THC</b> podem piorar sintomas em algumas pessoas.
-            É essencial procurar <b>ajuda especializada</b> e fazer acompanhamento conjunto com <b>psiquiatria</b> e equipe de saúde.
+            Em casos de <b>psicose</b> ou histórico relacionado, produtos derivados de <b>THC</b> podem piorar sintomas em algumas pessoas. É essencial procurar <b>ajuda especializada</b> e fazer acompanhamento conjunto com <b>psiquiatria</b> e equipe de saúde.
           </p>
           <p style={{ marginTop: 8, lineHeight: 1.5, opacity: 0.9 }}>
             Se você estiver em crise, com pensamentos acelerados, confusão, alucinações ou delírios, procure atendimento médico imediatamente.
@@ -361,11 +368,11 @@ export default function Perfil({ session, profile, onProfileSaved }) {
         saving={saving}
       />
 
-      <button type="button" disabled={saving} className={PRIMARY_BUTTON_CLASS} onClick={handleSave}>
+      <button type="button" disabled={saving} className={`${PRIMARY_BUTTON_CLASS} gaia-btn-block`} onClick={handleSave}>
         {saving ? "Salvando..." : "Salvar perfil"}
       </button>
 
-      {msg ? <div style={{ color: "#2e7d32", fontSize: 13 }}>{msg}</div> : null}
+      {msg ? <div style={{ color: msg.startsWith("✅") ? "#15803d" : "#b00020", fontSize: 13 }}>{msg}</div> : null}
     </div>
   );
 }

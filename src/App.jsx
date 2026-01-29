@@ -107,7 +107,7 @@ function Welcome() {
             Criar conta
           </Link>
           <Link to="/conteudos" style={btnMist}>
-            Entenda mais antes de se cadastrar (TESTE)
+            Entenda mais antes de se cadastrar 
           </Link>
         </div>
       </Card>
@@ -1854,15 +1854,54 @@ function AppHome({ session, profile, onProfileSaved }) {
     []
   );
 
-  async function handlePickGoal(titulo) {
+  const parseGoals = (value) => {
+    if (!value) return [];
+    if (Array.isArray(value)) return value;
+    return value
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean);
+  };
+
+  const [selectedGoals, setSelectedGoals] = useState(() => new Set(parseGoals(profile?.main_goal)));
+
+  useEffect(() => {
+    setSelectedGoals(new Set(parseGoals(profile?.main_goal)));
+  }, [profile?.main_goal]);
+
+  function toggleGoal(title) {
+    setSelectedGoals((prev) => {
+      const next = new Set(prev);
+      if (next.has(title)) {
+        next.delete(title);
+      } else {
+        next.add(title);
+      }
+      return next;
+    });
+  }
+
+  async function handleSaveGoals() {
+    if (!userId) {
+      setMsg("Sessão inválida. Faça login novamente.");
+      return;
+    }
+
+    const goals = Array.from(selectedGoals);
+    if (goals.length === 0) {
+      setMsg("Selecione pelo menos um objetivo.");
+      return;
+    }
+
     setSaving(true);
     setMsg("");
+
     try {
-      // salva a triagem no perfil (você pode trocar o campo depois, mas assim já funciona hoje)
-      const fresh = await saveProfileAndReload(userId, { main_goal: titulo });
+      const payload = { main_goal: goals.join(", ") };
+      const fresh = await saveProfileAndReload(userId, payload);
       onProfileSaved(fresh);
       nav("/app/saude", { replace: true });
-      setMsg(`✅ Salvo: ${titulo}`);
+      setMsg(`✅ Salvo: ${goals.join(", ")}`);
     } catch (err) {
       setMsg(err?.message || "Erro ao salvar objetivo.");
     } finally {
@@ -1874,7 +1913,7 @@ function AppHome({ session, profile, onProfileSaved }) {
     <div style={{ display: "grid", gap: 20 }}>
       <div style={{ textAlign: "center" }}>
         <h1 style={{ margin: "0 0 6px", fontSize: 30 }}>Gaia Plant</h1>
-        <p style={{ margin: 0, opacity: 0.75 }}>Selecione o principal objetivo</p>
+        <p style={{ margin: 0, opacity: 0.75 }}>Selecione um ou mais objetivos</p>
       </div>
 
       <Card>
@@ -1882,19 +1921,19 @@ function AppHome({ session, profile, onProfileSaved }) {
 
         <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
           {objetivos.map((item) => {
-            const active = profile?.main_goal === item.titulo;
+            const active = selectedGoals.has(item.titulo);
             return (
               <button
                 key={item.titulo}
                 type="button"
                 disabled={saving}
-                onClick={() => handlePickGoal(item.titulo)}
+                onClick={() => toggleGoal(item.titulo)}
                 style={{
                   textAlign: "left",
                   border: active ? "2px solid #43a047" : "2px solid #111",
                   borderRadius: 14,
                   padding: 14,
-                  background: "#fff",
+                  background: active ? "rgba(67,160,71,0.08)" : "#fff",
                   cursor: saving ? "not-allowed" : "pointer",
                   opacity: saving ? 0.7 : 1,
                 }}
@@ -1904,6 +1943,17 @@ function AppHome({ session, profile, onProfileSaved }) {
               </button>
             );
           })}
+        </div>
+
+        <div className="flex flex-wrap gap-2 mt-4">
+          <button
+            type="button"
+            onClick={handleSaveGoals}
+            disabled={saving}
+            className={`${PRIMARY_BUTTON_CLASS} w-full`}
+          >
+            {saving ? "Salvando..." : "Salvar e continuar"}
+          </button>
         </div>
 
         {msg ? <p style={{ marginTop: 12, color: msg.startsWith("✅") ? "#2e7d32" : "#b00020" }}>{msg}</p> : null}
