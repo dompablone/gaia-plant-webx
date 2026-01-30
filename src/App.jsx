@@ -14,15 +14,9 @@ import Perfil from "./pages/app/Perfil.jsx";
 import Medicos from "./pages/app/Medicos.jsx";
 import Layout, { PhoneFrameLayout } from "./components/Layout.jsx";
 import SelectButton from "./components/ui/SelectButton.jsx";
-/**
- * FLUXO (OFICIAL)
- * /auth -> /start -> /perfil-clinico -> /wizard -> /patologias -> /app
- */
 
-async function saveProfileAndReload(userId, patch) {
-  await upsertMyProfile(userId, patch);
-  return await fetchMyProfile(userId);
-}
+console.log("APP BOOT");
+console.log("SUPABASE INIT", import.meta.env.VITE_SUPABASE_URL);
 // -------------------- Helpers --------------------
 
 const CART_STORAGE_KEY = "gaia.cart.items";
@@ -66,29 +60,6 @@ function Input(props) {
 
 // -------------------- Auth Pages --------------------
 function Welcome() {
-  const btnBase = {
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    textDecoration: "none",
-    padding: "12px 18px",
-    borderRadius: 999,
-    fontWeight: 800,
-    fontSize: 14,
-    lineHeight: 1,
-    minWidth: 230,
-    boxShadow: "0 1px 2px rgba(0,0,0,0.08)",
-  };
-
-  const btnSolid = { ...btnBase, background: "#16a34a", color: "#fff", border: "1px solid #16a34a" };
-  const btnOutline = { ...btnBase, background: "#fff", color: "#166534", border: "2px solid #16a34a" };
-  const btnMist = {
-    ...btnBase,
-    background: "rgba(22,163,74,0.10)",
-    color: "#166534",
-    border: "2px solid rgba(22,163,74,0.35)",
-  };
-
   return (
     <div style={{ maxWidth: 360, margin: "0 auto", textAlign: "center", padding: "20px 16px" }}>
       <Card>
@@ -100,14 +71,14 @@ function Welcome() {
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 10, alignItems: "center", marginTop: 14 }}>
-          <Link to="/login" style={btnSolid}>
+          <Link to="/login" className="gaia-btn gaia-btn-primary gaia-btn-block">
             Já tenho conta
           </Link>
-          <Link to="/criar-conta" style={btnOutline}>
+          <Link to="/criar-conta" className="gaia-btn gaia-btn-outline gaia-btn-block">
             Criar conta
           </Link>
-          <Link to="/conteudos" style={btnMist}>
-            Entenda mais antes de se cadastrar 
+          <Link to="/conteudos" className="gaia-btn gaia-btn-mist gaia-btn-block">
+            Entenda mais antes de se cadastrar
           </Link>
         </div>
       </Card>
@@ -255,10 +226,7 @@ function Login() {
             </p>
           ) : null}
 
-          <Link
-            to="/conteudos"
-            className={`${GHOST_BUTTON_CLASS} inline-flex items-center justify-center w-full mt-2 text-sm no-underline`}
-          >
+          <Link to="/conteudos" className="gaia-btn gaia-btn-ghost gaia-btn-block mt-2">
             Entenda mais antes de se cadastrar
           </Link>
 
@@ -1854,54 +1822,15 @@ function AppHome({ session, profile, onProfileSaved }) {
     []
   );
 
-  const parseGoals = (value) => {
-    if (!value) return [];
-    if (Array.isArray(value)) return value;
-    return value
-      .split(",")
-      .map((item) => item.trim())
-      .filter(Boolean);
-  };
-
-  const [selectedGoals, setSelectedGoals] = useState(() => new Set(parseGoals(profile?.main_goal)));
-
-  useEffect(() => {
-    setSelectedGoals(new Set(parseGoals(profile?.main_goal)));
-  }, [profile?.main_goal]);
-
-  function toggleGoal(title) {
-    setSelectedGoals((prev) => {
-      const next = new Set(prev);
-      if (next.has(title)) {
-        next.delete(title);
-      } else {
-        next.add(title);
-      }
-      return next;
-    });
-  }
-
-  async function handleSaveGoals() {
-    if (!userId) {
-      setMsg("Sessão inválida. Faça login novamente.");
-      return;
-    }
-
-    const goals = Array.from(selectedGoals);
-    if (goals.length === 0) {
-      setMsg("Selecione pelo menos um objetivo.");
-      return;
-    }
-
+  async function handlePickGoal(titulo) {
     setSaving(true);
     setMsg("");
-
     try {
-      const payload = { main_goal: goals.join(", ") };
-      const fresh = await saveProfileAndReload(userId, payload);
+      // salva a triagem no perfil (você pode trocar o campo depois, mas assim já funciona hoje)
+      const fresh = await saveProfileAndReload(userId, { main_goal: titulo });
       onProfileSaved(fresh);
       nav("/app/saude", { replace: true });
-      setMsg(`✅ Salvo: ${goals.join(", ")}`);
+      setMsg(`✅ Salvo: ${titulo}`);
     } catch (err) {
       setMsg(err?.message || "Erro ao salvar objetivo.");
     } finally {
@@ -1913,7 +1842,7 @@ function AppHome({ session, profile, onProfileSaved }) {
     <div style={{ display: "grid", gap: 20 }}>
       <div style={{ textAlign: "center" }}>
         <h1 style={{ margin: "0 0 6px", fontSize: 30 }}>Gaia Plant</h1>
-        <p style={{ margin: 0, opacity: 0.75 }}>Selecione um ou mais objetivos</p>
+        <p style={{ margin: 0, opacity: 0.75 }}>Selecione o principal objetivo</p>
       </div>
 
       <Card>
@@ -1921,19 +1850,19 @@ function AppHome({ session, profile, onProfileSaved }) {
 
         <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
           {objetivos.map((item) => {
-            const active = selectedGoals.has(item.titulo);
+            const active = profile?.main_goal === item.titulo;
             return (
               <button
                 key={item.titulo}
                 type="button"
                 disabled={saving}
-                onClick={() => toggleGoal(item.titulo)}
+                onClick={() => handlePickGoal(item.titulo)}
                 style={{
                   textAlign: "left",
                   border: active ? "2px solid #43a047" : "2px solid #111",
                   borderRadius: 14,
                   padding: 14,
-                  background: active ? "rgba(67,160,71,0.08)" : "#fff",
+                  background: "#fff",
                   cursor: saving ? "not-allowed" : "pointer",
                   opacity: saving ? 0.7 : 1,
                 }}
@@ -1943,17 +1872,6 @@ function AppHome({ session, profile, onProfileSaved }) {
               </button>
             );
           })}
-        </div>
-
-        <div className="flex flex-wrap gap-2 mt-4">
-          <button
-            type="button"
-            onClick={handleSaveGoals}
-            disabled={saving}
-            className={`${PRIMARY_BUTTON_CLASS} w-full`}
-          >
-            {saving ? "Salvando..." : "Salvar e continuar"}
-          </button>
         </div>
 
         {msg ? <p style={{ marginTop: 12, color: msg.startsWith("✅") ? "#2e7d32" : "#b00020" }}>{msg}</p> : null}
