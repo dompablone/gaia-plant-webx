@@ -1,7 +1,6 @@
 // src/App.jsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Routes, Route, Navigate, Link, useNavigate } from "react-router-dom";
-
 import { supabase, SUPABASE_ENV_OK, SUPABASE_ENV_ERROR } from "./lib/supabase.js";
 import { fetchMyProfile, upsertMyProfile } from "./lib/profileApi.js";
 import { logWarn } from "./lib/telemetry.js";
@@ -13,7 +12,7 @@ import AppDashboard from "./pages/app/AppDashboard.jsx";
 import Perfil from "./pages/app/Perfil.jsx";
 import Medicos from "./pages/app/Medicos.jsx";
 import Layout, { PhoneFrameLayout } from "./components/Layout.jsx";
-
+import SelectButton from "./components/ui/SelectButton.jsx";
 console.log("APP BOOT");
 console.log("SUPABASE INIT", import.meta.env.VITE_SUPABASE_URL);
 // -------------------- Helpers --------------------
