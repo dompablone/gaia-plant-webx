@@ -1,18 +1,9 @@
 import React, { useEffect, useRef, useState } from "react";
 
 import Card from "../../components/ui/Card.jsx";
-import SelectButton from "../../components/ui/SelectButton.jsx";
 import { INPUT_CLASS, PRIMARY_BUTTON_CLASS } from "../../lib/constants/ui.js";
 import { fetchMyProfile, upsertMyProfile } from "../../lib/profileApi.js";
 import { normalizeTriage } from "../../lib/triage.js";
-
-const AGE_RANGES = [
-  { value: "18-24", label: "18-24" },
-  { value: "25-34", label: "25-34" },
-  { value: "35-44", label: "35-44" },
-  { value: "45-54", label: "45-54" },
-  { value: "55+", label: "55+" },
-];
 
 const GOAL_OPTIONS = [
   { value: "ansiedade", label: "Ansiedade" },
@@ -181,7 +172,6 @@ export default function Perfil({ session, profile, onProfileSaved }) {
   const [birthDate, setBirthDate] = useState(profile?.birth_date ?? "");
   const [state, setState] = useState(profile?.state ?? "");
 
-  const [ageRange, setAgeRange] = useState(profile?.age_range ?? "");
   const [mainReason, setMainReason] = useState(profile?.main_reason ?? "");
   const [mainGoal, setMainGoal] = useState(profile?.main_goal ?? "");
 
@@ -195,7 +185,6 @@ export default function Perfil({ session, profile, onProfileSaved }) {
     setCpf(profile.cpf ?? "");
     setBirthDate(profile.birth_date ?? "");
     setState(profile.state ?? "");
-    setAgeRange(profile.age_range ?? "");
     setMainGoal(profile.main_goal ?? "");
     setMainReason(profile.main_reason ?? "");
     setHealthTriage(normalizeTriage(profile.health_triage));
@@ -253,7 +242,6 @@ export default function Perfil({ session, profile, onProfileSaved }) {
         cpf: String(cpf || "").trim(),
         birth_date: String(birthDate || "").trim(),
         state: String(state || "").trim() || null,
-        age_range: ageRange || null,
         main_reason: mainReason || null,
         main_goal: mainGoal || null,
         health_triage: healthTriage,
@@ -326,9 +314,6 @@ export default function Perfil({ session, profile, onProfileSaved }) {
       <Card>
         <h3 style={{ marginTop: 0 }}>Informações clínicas</h3>
         <div style={{ display: "grid", gap: 12, marginTop: 12 }}>
-          <Field label="Faixa etária">
-            <SelectButton value={ageRange} onChange={setAgeRange} options={AGE_RANGES} />
-          </Field>
           <Field label="Motivo principal">
             <Input value={mainReason} onChange={(e) => setMainReason(e.target.value)} placeholder="Ex: Saúde, bem-estar, curiosidade..." />
           </Field>
