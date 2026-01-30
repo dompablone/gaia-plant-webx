@@ -13,7 +13,6 @@ import AppDashboard from "./pages/app/AppDashboard.jsx";
 import Perfil from "./pages/app/Perfil.jsx";
 import Medicos from "./pages/app/Medicos.jsx";
 import Layout, { PhoneFrameLayout } from "./components/Layout.jsx";
-import SelectButton from "./components/ui/SelectButton.jsx";
 
 console.log("APP BOOT");
 console.log("SUPABASE INIT", import.meta.env.VITE_SUPABASE_URL);
@@ -749,7 +748,7 @@ function Wizard({ session, profile, onProfileSaved }) {
     }
   }
 
-  const canContinue = Boolean(ageRange && mainGoal && mainReason);
+  const canContinue = Boolean(mainGoal && mainReason);
 
   return (
     <Card>
@@ -758,21 +757,7 @@ function Wizard({ session, profile, onProfileSaved }) {
 
       <hr style={{ margin: "18px 0", opacity: 0.2 }} />
 
-      <h3 style={{ margin: "0 0 8px" }}>Faixa etária</h3>
-      <div style={styles.choiceGrid}>
-        {["18-24", "25-34", "35-44", "45-54", "55+"].map((opt) => (
-          <SelectButton
-            key={opt}
-            className="gp-card-link"
-            active={ageRange === opt}
-            title={opt}
-            onClick={() => setAgeRange(opt)}
-          />
-        ))}
-      </div>
-
-      <hr style={{ margin: "22px 0", opacity: 0.2 }} />
-
+      
       <h3 style={{ margin: "0 0 8px" }}>Objetivos mais procurados</h3>
       <div style={styles.choiceGrid2}>
         {goals.map((g) => (
