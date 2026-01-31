@@ -690,7 +690,16 @@ function Wizard({ session, profile, onProfileSaved }) {
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState("");
 
-  const [mainGoal, setMainGoal] = useState(profile?.main_goal ?? "");
+  const parseGoals = (value) => {
+    if (!value) return [];
+    if (Array.isArray(value)) return value;
+    return String(value)
+      .split(",")
+      .map((x) => x.trim())
+      .filter(Boolean);
+  };
+
+  const [selectedGoals, setSelectedGoals] = useState(() => new Set(parseGoals(profile?.main_goal)));
 
   const parseReason = (value) => {
     if (!value) return [];
@@ -702,6 +711,10 @@ function Wizard({ session, profile, onProfileSaved }) {
   };
 
   const [selectedReasons, setSelectedReasons] = useState(() => new Set(parseReason(profile?.main_reason)));
+
+  useEffect(() => {
+    setSelectedGoals(new Set(parseGoals(profile?.main_goal)));
+  }, [profile?.main_goal]);
 
   useEffect(() => {
     setSelectedReasons(new Set(parseReason(profile?.main_reason)));
@@ -716,21 +729,30 @@ function Wizard({ session, profile, onProfileSaved }) {
     });
   }
 
+  function toggleGoal(label) {
+    setSelectedGoals((prev) => {
+      const next = new Set(prev);
+      if (next.has(label)) next.delete(label);
+      else next.add(label);
+      return next;
+    });
+  }
+
   const goals = useMemo(
     () => [
-      { key: "Melhora do Sono", sub: "Ajuda para dormir e manter o descanso." },
-      { key: "Mais Calma", sub: "Controle da agitação e do nervosismo diário." },
-      { key: "Aumento do Foco", sub: "Mais concentração nas suas atividades." },
-      { key: "Menos Estresse", sub: "Melhora do estresse e exaustão diária." },
-      { key: "Controle da Ansiedade", sub: "Busca por mais equilíbrio emocional." },
-      { key: "Dor Crônica", sub: "Alívio de dores constantes." },
-      { key: "Melhora no Esporte", sub: "Mais energia e menos fadiga muscular." },
-      { key: "Aumento da Libido", sub: "Recupere a sensação de prazer." },
-      { key: "Enxaqueca", sub: "Alívio para dores de cabeça fortes." },
-      { key: "Controle da TPM", sub: "Controle para mudanças de humor e irritação." },
-    ],
-    []
-  );
+    { key: "Melhora do Sono", sub: "Ajuda para dormir e manter o descanso." },
+    { key: "Mais Calma", sub: "Controle da agitação e do nervosismo diário." },
+    { key: "Aumento do Foco", sub: "Mais concentração nas suas atividades." },
+    { key: "Menos Estresse", sub: "Melhora do estresse e exaustão diária." },
+    { key: "Controle da Ansiedade", sub: "Busca por mais equilíbrio emocional." },
+    { key: "Dor Crônica", sub: "Alívio de dores constantes." },
+    { key: "Melhora no Esporte", sub: "Mais energia e menos fadiga muscular." },
+    { key: "Aumento da Libido", sub: "Recupere a sensação de prazer." },
+    { key: "Enxaqueca", sub: "Alívio para dores de cabeça fortes." },
+    { key: "Controle da TPM", sub: "Controle para mudanças de humor e irritação." },
+  ],
+  []
+);
 
   useEffect(() => {
     if (profile && !isPersonalComplete(profile)) nav("/perfil-clinico", { replace: true });
@@ -749,7 +771,7 @@ function Wizard({ session, profile, onProfileSaved }) {
       return;
     }
 
-    const ok = Boolean(mainGoal && selectedReasons.size > 0);
+    const ok = Boolean(selectedGoals.size > 0 && selectedReasons.size > 0);
     if (!ok) {
       setMsg("Selecione um objetivo e pelo menos um motivo para continuar.");
       setSaving(false);
@@ -758,7 +780,7 @@ function Wizard({ session, profile, onProfileSaved }) {
 
     try {
       const patch = {
-        main_goal: mainGoal,
+        main_goal: Array.from(selectedGoals).join(", "),
         main_reason: Array.from(selectedReasons).join(", "),
       };
       const fresh = await saveProfileAndReload(userId, patch);
@@ -771,9 +793,9 @@ function Wizard({ session, profile, onProfileSaved }) {
     }
   }
 
-  const canContinue = Boolean(mainGoal && selectedReasons.size > 0);
+  const canContinue = Boolean(selectedGoals.size > 0 && selectedReasons.size > 0);
   const reasonOptions = ["Saúde", "Bem-estar", "Curiosidade", "Lazer", "Outro"];
-  const progress = canContinue ? 100 : mainGoal ? 66 : 33;
+  const progress = canContinue ? 100 : selectedGoals.size > 0 ? 66 : 33;
 
   return (
     <div style={{ minHeight: "100vh", background: "#f6f7f8", padding: "24px 16px" }}>
@@ -781,7 +803,7 @@ function Wizard({ session, profile, onProfileSaved }) {
         <Card>
           <div style={{ display: "grid", gap: 10 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <div style={{ fontWeight: 900, letterSpacing: 0.2 }}>Onboarding</div>
+              <div style={{ fontWeight: 900, letterSpacing: 0.2 }}>Personalização</div>
               <div style={{ fontSize: 12, opacity: 0.7, fontWeight: 800 }}>Passo 2 de 3</div>
             </div>
 
@@ -806,12 +828,12 @@ function Wizard({ session, profile, onProfileSaved }) {
               <h3 style={{ margin: "0 0 10px" }}>Objetivos mais procurados</h3>
               <div style={{ display: "grid", gap: 10 }}>
                 {goals.map((g) => {
-                  const active = mainGoal === g.key;
+                  const active = selectedGoals.has(g.key);
                   return (
                     <button
                       key={g.key}
                       type="button"
-                      onClick={() => setMainGoal(g.key)}
+                      onClick={() => toggleGoal(g.key)}
                       disabled={saving}
                       style={{
                         width: "100%",
