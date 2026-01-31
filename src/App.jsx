@@ -1227,43 +1227,43 @@ function Produtos() {
             const favoriteId = oil.id ?? oil.title;
             const favorite = isFavorite(favoriteId);
             return (
-            <div
-              key={oil.id}
-              style={{
-                padding: 16,
-                borderRadius: 16,
-                border: "1px solid rgba(0,0,0,0.12)",
-                background: "#fff",
-                display: "grid",
-                gap: 8,
-              }}
-            >
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-                <div style={{ fontWeight: 900, fontSize: 18 }}>{oil.title}</div>
-                <button
-                  type="button"
-                  className="gaia-btn gaia-btn-ghost"
-                  style={{
-                    width: 44,
-                    height: 44,
-                    minWidth: 44,
-                    borderRadius: 999,
-                    padding: 0,
-                    fontSize: 18,
-                  }}
-                  aria-label="Favoritar produto"
-                  title={favorite ? "Remover dos favoritos" : "Marcar como favorito"}
-                  aria-pressed={favorite}
-                  onClick={() => {
-                    toggleFavorite(favoriteId);
-                    window.dispatchEvent(new Event("gaia:favorites"));
-                  }}
-                >
-                  {favorite ? "⭐️" : "☆"}
-                </button>
-              </div>
-              <div style={{ opacity: 0.8 }}>{oil.desc}</div>
-              <div style={{ opacity: 0.75, fontSize: 13 }}>Indicado para: {oil.indications}</div>
+              <div
+                key={oil.id}
+                style={{
+                  padding: 16,
+                  borderRadius: 16,
+                  border: "1px solid rgba(0,0,0,0.12)",
+                  background: "#fff",
+                  display: "grid",
+                  gap: 8,
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+                  <div style={{ fontWeight: 900, fontSize: 18 }}>{oil.title}</div>
+                  <button
+                    type="button"
+                    className="gaia-btn gaia-btn-ghost"
+                    style={{
+                      width: 44,
+                      height: 44,
+                      minWidth: 44,
+                      borderRadius: 999,
+                      padding: 0,
+                      fontSize: 18,
+                    }}
+                    aria-label="Favoritar produto"
+                    title={favorite ? "Remover dos favoritos" : "Marcar como favorito"}
+                    aria-pressed={favorite}
+                    onClick={() => {
+                      toggleFavorite(favoriteId);
+                      window.dispatchEvent(new Event("gaia:favorites"));
+                    }}
+                  >
+                    {favorite ? "⭐️" : "☆"}
+                  </button>
+                </div>
+                <div style={{ opacity: 0.8 }}>{oil.desc}</div>
+                <div style={{ opacity: 0.75, fontSize: 13 }}>Indicado para: {oil.indications}</div>
 
               <div style={{ marginTop: 6, fontWeight: 700, fontSize: 13 }}>Concentração</div>
               <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
@@ -1287,7 +1287,8 @@ function Produtos() {
                 ))}
               </div>
             </div>
-          ))}
+          );
+          })}
         </div>
       </Card>
     </div>
@@ -1767,22 +1768,25 @@ function Historico({ profile }) {
                 }}
               >
                 <div style={{ fontWeight: 800 }}>{id}</div>
-
                 <button
                   type="button"
                   className="gaia-btn gaia-btn-ghost"
                   style={{ width: 44, height: 44, minWidth: 44, borderRadius: 999, padding: 0, fontSize: 18 }}
-                  aria-label="Remover favorito"
-                  title="Remover"
+                  aria-label="Remover dos favoritos"
+                  title="Remover dos favoritos"
                   onClick={() => {
                     toggleFavorite(id);
                     window.dispatchEvent(new Event("gaia:favorites"));
                   }}
                 >
-                  ⭐️
+                  ★
                 </button>
               </div>
             ))}
+
+            <Link to="/app/produtos" className="gaia-link" style={{ marginTop: 6 }}>
+              Ver produtos
+            </Link>
           </div>
         )}
       </Card>
