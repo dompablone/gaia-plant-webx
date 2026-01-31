@@ -82,7 +82,7 @@ export default function Layout() {
             src={GAIA_ICON}
             alt="Gaia Plant"
             style={{
-              height: 44,
+              height: 55,
               width: "auto",
               objectFit: "contain",
             }}
