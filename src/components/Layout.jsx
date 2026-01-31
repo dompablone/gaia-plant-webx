@@ -16,9 +16,9 @@ const headerStyles = {
 };
 
 const brandStyles = {
-  display: "inline-flex",
+  display: "flex",
   alignItems: "center",
-  gap: 8,
+  gap: 12,
   textDecoration: "none",
   color: "#0f172a",
   fontWeight: 700,
@@ -78,7 +78,15 @@ export default function Layout() {
     <div>
       <header style={headerStyles}>
         <Link to="/app" style={brandStyles} aria-label="Gaia Plant">
-          <img src={GAIA_ICON} alt="Gaia Plant" width={32} height={32} style={{ borderRadius: "50%" }} />
+          <img
+            src={GAIA_ICON}
+            alt="Gaia Plant"
+            style={{
+              height: 44,
+              width: "auto",
+              objectFit: "contain",
+            }}
+          />
           <span>Gaia Plant</span>
         </Link>
 
