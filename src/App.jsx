@@ -39,6 +39,38 @@ function writeCart(items) {
     // ignore storage errors
   }
 }
+// -------------------- Favorites (MVP: localStorage) --------------------
+const FAVORITES_STORAGE_KEY = "gaia.favorites.items";
+
+function readFavorites() {
+  try {
+    const raw = localStorage.getItem(FAVORITES_STORAGE_KEY);
+    const data = raw ? JSON.parse(raw) : [];
+    return Array.isArray(data) ? data : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeFavorites(items) {
+  try {
+    localStorage.setItem(FAVORITES_STORAGE_KEY, JSON.stringify(items || []));
+  } catch {}
+}
+
+function toggleFavorite(productId) {
+  const current = readFavorites();
+  const set = new Set(current);
+  if (set.has(productId)) set.delete(productId);
+  else set.add(productId);
+  const next = Array.from(set);
+  writeFavorites(next);
+  return next;
+}
+
+function isFavorite(productId) {
+  return readFavorites().includes(productId);
+}
 function Field({ label, children }) {
   return (
     <div className="mb-3">
@@ -605,7 +637,8 @@ function ClinicalProfile({ session, profile, onProfileSaved }) {
         birth_date: birthValue,
         state: stateValue,
       };
-      const fresh = await saveProfileAndReload(userId, patch);
+      await upsertMyProfile(userId, patch);
+const fresh = await fetchMyProfile(userId);
       onProfileSaved?.(fresh);
       nav("/wizard", { replace: true });
     } catch (err) {
@@ -690,16 +723,7 @@ function Wizard({ session, profile, onProfileSaved }) {
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState("");
 
-  const parseGoals = (value) => {
-    if (!value) return [];
-    if (Array.isArray(value)) return value;
-    return String(value)
-      .split(",")
-      .map((x) => x.trim())
-      .filter(Boolean);
-  };
-
-  const [selectedGoals, setSelectedGoals] = useState(() => new Set(parseGoals(profile?.main_goal)));
+  const [mainGoal, setMainGoal] = useState(profile?.main_goal ?? "");
 
   const parseReason = (value) => {
     if (!value) return [];
@@ -711,10 +735,6 @@ function Wizard({ session, profile, onProfileSaved }) {
   };
 
   const [selectedReasons, setSelectedReasons] = useState(() => new Set(parseReason(profile?.main_reason)));
-
-  useEffect(() => {
-    setSelectedGoals(new Set(parseGoals(profile?.main_goal)));
-  }, [profile?.main_goal]);
 
   useEffect(() => {
     setSelectedReasons(new Set(parseReason(profile?.main_reason)));
@@ -729,30 +749,21 @@ function Wizard({ session, profile, onProfileSaved }) {
     });
   }
 
-  function toggleGoal(label) {
-    setSelectedGoals((prev) => {
-      const next = new Set(prev);
-      if (next.has(label)) next.delete(label);
-      else next.add(label);
-      return next;
-    });
-  }
-
   const goals = useMemo(
     () => [
-    { key: "Melhora do Sono", sub: "Ajuda para dormir e manter o descanso." },
-    { key: "Mais Calma", sub: "Controle da agitação e do nervosismo diário." },
-    { key: "Aumento do Foco", sub: "Mais concentração nas suas atividades." },
-    { key: "Menos Estresse", sub: "Melhora do estresse e exaustão diária." },
-    { key: "Controle da Ansiedade", sub: "Busca por mais equilíbrio emocional." },
-    { key: "Dor Crônica", sub: "Alívio de dores constantes." },
-    { key: "Melhora no Esporte", sub: "Mais energia e menos fadiga muscular." },
-    { key: "Aumento da Libido", sub: "Recupere a sensação de prazer." },
-    { key: "Enxaqueca", sub: "Alívio para dores de cabeça fortes." },
-    { key: "Controle da TPM", sub: "Controle para mudanças de humor e irritação." },
-  ],
-  []
-);
+      { key: "Melhora do Sono", sub: "Ajuda para dormir e manter o descanso." },
+      { key: "Mais Calma", sub: "Controle da agitação e do nervosismo diário." },
+      { key: "Aumento do Foco", sub: "Mais concentração nas suas atividades." },
+      { key: "Menos Estresse", sub: "Melhora do estresse e exaustão diária." },
+      { key: "Controle da Ansiedade", sub: "Busca por mais equilíbrio emocional." },
+      { key: "Dor Crônica", sub: "Alívio de dores constantes." },
+      { key: "Melhora no Esporte", sub: "Mais energia e menos fadiga muscular." },
+      { key: "Aumento da Libido", sub: "Recupere a sensação de prazer." },
+      { key: "Enxaqueca", sub: "Alívio para dores de cabeça fortes." },
+      { key: "Controle da TPM", sub: "Controle para mudanças de humor e irritação." },
+    ],
+    []
+  );
 
   useEffect(() => {
     if (profile && !isPersonalComplete(profile)) nav("/perfil-clinico", { replace: true });
@@ -771,21 +782,21 @@ function Wizard({ session, profile, onProfileSaved }) {
       return;
     }
 
-    const ok = Boolean(selectedGoals.size > 0 && selectedReasons.size > 0);
+    const ok = Boolean(mainGoal && selectedReasons.size > 0);
     if (!ok) {
-      setMsg("Selecione um objetivo e pelo menos um motivo para continuar.");
+      setMsg("Preencha todas as informações para continuar.");
       setSaving(false);
       return;
     }
 
     try {
       const patch = {
-        main_goal: Array.from(selectedGoals).join(", "),
+        main_goal: mainGoal,
         main_reason: Array.from(selectedReasons).join(", "),
       };
       const fresh = await saveProfileAndReload(userId, patch);
       onProfileSaved?.(fresh);
-      nav(getNextRoute(fresh), { replace: true });
+      nav("/patologias", { replace: true });
     } catch (err) {
       setMsg(err?.message || "Erro ao salvar wizard.");
     } finally {
@@ -793,9 +804,10 @@ function Wizard({ session, profile, onProfileSaved }) {
     }
   }
 
-  const canContinue = Boolean(selectedGoals.size > 0 && selectedReasons.size > 0);
+  const canContinue = Boolean(mainGoal && selectedReasons.size > 0);
+
   const reasonOptions = ["Saúde", "Bem-estar", "Curiosidade", "Lazer", "Outro"];
-  const progress = canContinue ? 100 : selectedGoals.size > 0 ? 66 : 33;
+  const progress = canContinue ? 100 : mainGoal ? 66 : 33;
 
   return (
     <div style={{ minHeight: "100vh", background: "#f6f7f8", padding: "24px 16px" }}>
@@ -803,7 +815,7 @@ function Wizard({ session, profile, onProfileSaved }) {
         <Card>
           <div style={{ display: "grid", gap: 10 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <div style={{ fontWeight: 900, letterSpacing: 0.2 }}>Personalização</div>
+              <div style={{ fontWeight: 900, letterSpacing: 0.2 }}>Onboarding</div>
               <div style={{ fontSize: 12, opacity: 0.7, fontWeight: 800 }}>Passo 2 de 3</div>
             </div>
 
@@ -821,19 +833,21 @@ function Wizard({ session, profile, onProfileSaved }) {
 
             <div style={{ marginTop: 6 }}>
               <h2 style={{ margin: 0, fontSize: 26, lineHeight: 1.15 }}>Só mais um passo</h2>
-              <p style={{ marginTop: 8, marginBottom: 0, opacity: 0.75 }}>Isso ajuda a personalizar recomendações.</p>
+              <p style={{ marginTop: 8, marginBottom: 0, opacity: 0.75 }}>
+                Isso ajuda a personalizar recomendações.
+              </p>
             </div>
 
             <div style={{ marginTop: 14 }}>
               <h3 style={{ margin: "0 0 10px" }}>Objetivos mais procurados</h3>
               <div style={{ display: "grid", gap: 10 }}>
                 {goals.map((g) => {
-                  const active = selectedGoals.has(g.key);
+                  const active = mainGoal === g.key;
                   return (
                     <button
                       key={g.key}
                       type="button"
-                      onClick={() => toggleGoal(g.key)}
+                      onClick={() => setMainGoal(g.key)}
                       disabled={saving}
                       style={{
                         width: "100%",
@@ -868,8 +882,9 @@ function Wizard({ session, profile, onProfileSaved }) {
 
             <div style={{ marginTop: 14 }}>
               <h3 style={{ margin: "0 0 10px" }}>Qual é o principal motivo?</h3>
-              <p style={{ marginTop: 0, marginBottom: 10, opacity: 0.7, fontSize: 13 }}>Você pode selecionar mais de um.</p>
-
+              <p style={{ marginTop: 0, marginBottom: 10, opacity: 0.7, fontSize: 13 }}>
+                Você pode selecionar mais de um.
+              </p>
               <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
                 {reasonOptions.map((m) => {
                   const active = selectedReasons.has(m);
@@ -916,6 +931,7 @@ function Wizard({ session, profile, onProfileSaved }) {
     </div>
   );
 }
+
 // -------------------- Patologias --------------------
 function Patologias({ session, profile, onProfileSaved }) {
   const nav = useNavigate();
@@ -1009,31 +1025,16 @@ function Patologias({ session, profile, onProfileSaved }) {
         <h2 style={{ marginTop: 0, fontSize: 28 }}>O que você busca tratar ou melhorar?</h2>
         <p style={{ marginTop: 6, opacity: 0.75 }}>Selecione uma ou mais opções.</p>
 
-        <div style={{ display: "grid", gap: 10 }}>
-          {conditions.map((c) => {
-            const active = selectedConditions.includes(c);
-            return (
-              <button
-                key={c}
-                type="button"
-                onClick={() => toggle(c)}
-                disabled={saving}
-                style={{
-                  width: "100%",
-                  textAlign: "left",
-                  padding: "12px 16px",
-                  borderRadius: 16,
-                  border: active ? "2px solid #16a34a" : "1px solid rgba(15,23,42,0.12)",
-                  background: active ? "rgba(22,163,74,0.08)" : "#fff",
-                  fontWeight: 700,
-                  color: "#111",
-                  cursor: saving ? "not-allowed" : "pointer",
-                }}
-              >
-                {c}
-              </button>
-            );
-          })}
+        <div style={styles.choiceGrid2}>
+          {conditions.map((c) => (
+            <SelectButton
+              key={c}
+              className="gp-card-link"
+              active={selectedConditions.includes(c)}
+              title={c}
+              onClick={() => toggle(c)}
+            />
+          ))}
         </div>
 
         <div className="flex flex-wrap gap-2 mt-4">
@@ -1152,6 +1153,13 @@ function PublicConteudos() {
 function Produtos() {
   const nav = useNavigate();
   const [msg, setMsg] = useState("");
+  const [, forceFavRefresh] = useState(0);
+
+  useEffect(() => {
+    const onFav = () => forceFavRefresh((x) => x + 1);
+    window.addEventListener("gaia:favorites", onFav);
+    return () => window.removeEventListener("gaia:favorites", onFav);
+  }, []);
 
   const oils = [
     {
@@ -1215,7 +1223,10 @@ function Produtos() {
       <Card>
         <h3 style={{ marginTop: 0 }}>Óleos de CBD</h3>
         <div style={{ display: "grid", gap: 12, marginTop: 12 }}>
-          {oils.map((oil) => (
+          {oils.map((oil) => {
+            const favoriteId = oil.id ?? oil.title;
+            const favorite = isFavorite(favoriteId);
+            return (
             <div
               key={oil.id}
               style={{
@@ -1227,7 +1238,30 @@ function Produtos() {
                 gap: 8,
               }}
             >
-              <div style={{ fontWeight: 900, fontSize: 18 }}>{oil.title}</div>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+                <div style={{ fontWeight: 900, fontSize: 18 }}>{oil.title}</div>
+                <button
+                  type="button"
+                  className="gaia-btn gaia-btn-ghost"
+                  style={{
+                    width: 44,
+                    height: 44,
+                    minWidth: 44,
+                    borderRadius: 999,
+                    padding: 0,
+                    fontSize: 18,
+                  }}
+                  aria-label="Favoritar produto"
+                  title={favorite ? "Remover dos favoritos" : "Marcar como favorito"}
+                  aria-pressed={favorite}
+                  onClick={() => {
+                    toggleFavorite(favoriteId);
+                    window.dispatchEvent(new Event("gaia:favorites"));
+                  }}
+                >
+                  {favorite ? "⭐️" : "☆"}
+                </button>
+              </div>
               <div style={{ opacity: 0.8 }}>{oil.desc}</div>
               <div style={{ opacity: 0.75, fontSize: 13 }}>Indicado para: {oil.indications}</div>
 
@@ -1427,16 +1461,15 @@ function AlertasUso() {
   return (
     <Card>
       <h2 style={{ marginTop: 0 }}>Alertas de uso</h2>
-      <p>
-        Produtos à base de canabinoides não substituem avaliação médica. Use somente conforme orientação profissional e respeite as doses recomendadas.
+      <p style={{ opacity: 0.85, lineHeight: 1.5 }}>
+        Produtos à base de canabinoides não substituem avaliação médica. Use somente conforme orientação
+        profissional e respeite as doses recomendadas.
       </p>
-      <hr />
-      <p>
-        Evite dirigir ou operar máquinas se houver sonolência. Não combine com álcool ou medicações sem orientação. Em caso de efeitos adversos, procure assistência médica.
+      <p style={{ opacity: 0.85, lineHeight: 1.5 }}>
+        Evite dirigir ou operar máquinas se houver sonolência. Não combine com álcool ou medicações sem
+        orientação. Em caso de efeitos adversos, procure assistência médica.
       </p>
-      <p style={{ marginTop: 12, fontWeight: 900 }}>
-        MANTENHA FORA DO ALCANCE DE CRIANÇAS.
-      </p>
+      <p style={{ fontWeight: 800, marginTop: 12 }}>MANTENHA FORA DO ALCANCE DE CRIANÇAS.</p>
     </Card>
   );
 }
@@ -1574,13 +1607,19 @@ function TriageEditor({ title, subtitle, fields, value, onToggle, onNote, saving
 
 function Historico({ profile }) {
   const nav = useNavigate();
+  const [favorites, setFavorites] = useState(() => readFavorites());
+
+  useEffect(() => {
+    const onFav = () => setFavorites(readFavorites());
+    window.addEventListener("gaia:favorites", onFav);
+    return () => window.removeEventListener("gaia:favorites", onFav);
+  }, []);
 
   const health = normalizeTriage(profile?.health_triage);
   const emo = normalizeTriage(profile?.emotional_triage);
 
   // Produtos (MVP): lemos de onboarding_answers.products para não depender de novas colunas
   const products = profile?.onboarding_answers?.products || {};
-  const favorites = Array.isArray(products.favorites) ? products.favorites : [];
   const purchased = Array.isArray(products.purchased) ? products.purchased : [];
 
   function renderTriageSection(title, triageObj) {
@@ -1704,6 +1743,48 @@ function Historico({ profile }) {
             Ir para Pagamentos
           </button>
         </div>
+      </Card>
+
+      <Card>
+        <h3 style={{ marginTop: 0 }}>Favoritos</h3>
+
+        {favorites.length === 0 ? (
+          <p style={{ opacity: 0.75, marginTop: 8 }}>Você ainda não marcou nenhum produto como favorito.</p>
+        ) : (
+          <div style={{ display: "grid", gap: 10, marginTop: 10 }}>
+            {favorites.map((id) => (
+              <div
+                key={id}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: 12,
+                  padding: 12,
+                  borderRadius: 14,
+                  border: "1px solid rgba(15,23,42,0.12)",
+                  background: "#fff",
+                }}
+              >
+                <div style={{ fontWeight: 800 }}>{id}</div>
+
+                <button
+                  type="button"
+                  className="gaia-btn gaia-btn-ghost"
+                  style={{ width: 44, height: 44, minWidth: 44, borderRadius: 999, padding: 0, fontSize: 18 }}
+                  aria-label="Remover favorito"
+                  title="Remover"
+                  onClick={() => {
+                    toggleFavorite(id);
+                    window.dispatchEvent(new Event("gaia:favorites"));
+                  }}
+                >
+                  ⭐️
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
       </Card>
     </div>
   );
