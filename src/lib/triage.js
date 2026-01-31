@@ -13,7 +13,7 @@ export function isPersonalComplete(p) {
 }
 
 export function isWizardComplete(p) {
-  return Boolean(p?.age_range && p?.main_goal && p?.main_reason);
+  return Boolean(p?.main_goal && p?.main_reason);
 }
 
 export function hasConditionsSelected(p) {

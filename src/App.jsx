@@ -785,7 +785,7 @@ function Wizard({ session, profile, onProfileSaved }) {
       };
       const fresh = await saveProfileAndReload(userId, patch);
       onProfileSaved?.(fresh);
-      nav("/patologias", { replace: true });
+      nav(getNextRoute(fresh), { replace: true });
     } catch (err) {
       setMsg(err?.message || "Erro ao salvar wizard.");
     } finally {
