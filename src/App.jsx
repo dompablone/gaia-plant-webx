@@ -12,6 +12,7 @@ import AppDashboard from "./pages/app/AppDashboard.jsx";
 import Perfil from "./pages/app/Perfil.jsx";
 import Medicos from "./pages/app/Medicos.jsx";
 import Layout, { PhoneFrameLayout } from "./components/Layout.jsx";
+import AuthLayout from "./components/layouts/AuthLayout.jsx";
 import SelectButton from "./components/ui/SelectButton.jsx";
 console.log("APP BOOT");
 console.log("SUPABASE INIT", import.meta.env.VITE_SUPABASE_URL);
@@ -2470,11 +2471,13 @@ export default function App() {
     <Routes>
       <Route path="/" element={<Navigate to={session ? "/app" : "/auth"} replace />} />
 
-      <Route path="/auth" element={<Welcome />} />
-      <Route path="/conteudos" element={<PublicConteudos />} />
-      <Route path="/login" element={<Login />} />
-      <Route path="/reset-password" element={<ResetPassword />} />
-      <Route path="/criar-conta" element={<Signup />} />
+      <Route element={<AuthLayout />}>
+        <Route path="/auth" element={<Welcome />} />
+        <Route path="/conteudos" element={<PublicConteudos />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/criar-conta" element={<Signup />} />
+      </Route>
 
       <Route
         path="/start"
