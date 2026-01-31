@@ -691,7 +691,30 @@ function Wizard({ session, profile, onProfileSaved }) {
   const [msg, setMsg] = useState("");
 
   const [mainGoal, setMainGoal] = useState(profile?.main_goal ?? "");
-  const [mainReason, setMainReason] = useState(profile?.main_reason ?? "");
+
+  const parseReason = (value) => {
+    if (!value) return [];
+    if (Array.isArray(value)) return value;
+    return String(value)
+      .split(",")
+      .map((x) => x.trim())
+      .filter(Boolean);
+  };
+
+  const [selectedReasons, setSelectedReasons] = useState(() => new Set(parseReason(profile?.main_reason)));
+
+  useEffect(() => {
+    setSelectedReasons(new Set(parseReason(profile?.main_reason)));
+  }, [profile?.main_reason]);
+
+  function toggleReason(label) {
+    setSelectedReasons((prev) => {
+      const next = new Set(prev);
+      if (next.has(label)) next.delete(label);
+      else next.add(label);
+      return next;
+    });
+  }
 
   const goals = useMemo(
     () => [
@@ -726,9 +749,9 @@ function Wizard({ session, profile, onProfileSaved }) {
       return;
     }
 
-    const ok = Boolean(mainGoal && mainReason);
+    const ok = Boolean(mainGoal && selectedReasons.size > 0);
     if (!ok) {
-      setMsg("Preencha todas as informações para continuar.");
+      setMsg("Selecione um objetivo e pelo menos um motivo para continuar.");
       setSaving(false);
       return;
     }
@@ -736,7 +759,7 @@ function Wizard({ session, profile, onProfileSaved }) {
     try {
       const patch = {
         main_goal: mainGoal,
-        main_reason: mainReason,
+        main_reason: Array.from(selectedReasons).join(", "),
       };
       const fresh = await saveProfileAndReload(userId, patch);
       onProfileSaved?.(fresh);
@@ -748,62 +771,129 @@ function Wizard({ session, profile, onProfileSaved }) {
     }
   }
 
-  const canContinue = Boolean(mainGoal && mainReason);
+  const canContinue = Boolean(mainGoal && selectedReasons.size > 0);
+  const reasonOptions = ["Saúde", "Bem-estar", "Curiosidade", "Lazer", "Outro"];
+  const progress = canContinue ? 100 : mainGoal ? 66 : 33;
 
   return (
-    <Card>
-      <h2 style={{ marginTop: 0, fontSize: 32 }}>Só mais um passo 👇</h2>
-      <p style={{ marginTop: 6, opacity: 0.75 }}>Isso ajuda a personalizar recomendações.</p>
+    <div style={{ minHeight: "100vh", background: "#f6f7f8", padding: "24px 16px" }}>
+      <div style={{ width: "100%", maxWidth: 420, margin: "0 auto" }}>
+        <Card>
+          <div style={{ display: "grid", gap: 10 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div style={{ fontWeight: 900, letterSpacing: 0.2 }}>Onboarding</div>
+              <div style={{ fontSize: 12, opacity: 0.7, fontWeight: 800 }}>Passo 2 de 3</div>
+            </div>
 
-      <hr style={{ margin: "18px 0", opacity: 0.2 }} />
+            <div style={{ height: 10, borderRadius: 999, background: "rgba(15,23,42,0.08)", overflow: "hidden" }}>
+              <div
+                style={{
+                  height: "100%",
+                  width: `${progress}%`,
+                  background: "#16a34a",
+                  borderRadius: 999,
+                  transition: "width 240ms ease",
+                }}
+              />
+            </div>
 
-      
-      <h3 style={{ margin: "0 0 8px" }}>Objetivos mais procurados</h3>
-      <div style={styles.choiceGrid2}>
-        {goals.map((g) => (
-          <SelectButton
-            key={g.key}
-            className="gp-card-link"
-            active={mainGoal === g.key}
-            title={g.key}
-            subtitle={g.sub}
-            onClick={() => setMainGoal(g.key)}
-          />
-        ))}
+            <div style={{ marginTop: 6 }}>
+              <h2 style={{ margin: 0, fontSize: 26, lineHeight: 1.15 }}>Só mais um passo</h2>
+              <p style={{ marginTop: 8, marginBottom: 0, opacity: 0.75 }}>Isso ajuda a personalizar recomendações.</p>
+            </div>
+
+            <div style={{ marginTop: 14 }}>
+              <h3 style={{ margin: "0 0 10px" }}>Objetivos mais procurados</h3>
+              <div style={{ display: "grid", gap: 10 }}>
+                {goals.map((g) => {
+                  const active = mainGoal === g.key;
+                  return (
+                    <button
+                      key={g.key}
+                      type="button"
+                      onClick={() => setMainGoal(g.key)}
+                      disabled={saving}
+                      style={{
+                        width: "100%",
+                        textAlign: "left",
+                        padding: 14,
+                        borderRadius: 16,
+                        border: active ? "2px solid #16a34a" : "1px solid rgba(15,23,42,0.14)",
+                        background: active ? "rgba(22,163,74,0.10)" : "#fff",
+                        cursor: saving ? "not-allowed" : "pointer",
+                      }}
+                    >
+                      <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "flex-start" }}>
+                        <div style={{ display: "grid", gap: 4 }}>
+                          <div style={{ fontWeight: 900, fontSize: 16 }}>{g.key}</div>
+                          <div style={{ opacity: 0.75, fontSize: 13 }}>{g.sub}</div>
+                        </div>
+                        <div
+                          style={{
+                            marginTop: 2,
+                            width: 12,
+                            height: 12,
+                            borderRadius: 999,
+                            border: active ? "6px solid #16a34a" : "2px solid rgba(15,23,42,0.18)",
+                          }}
+                        />
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div style={{ marginTop: 14 }}>
+              <h3 style={{ margin: "0 0 10px" }}>Qual é o principal motivo?</h3>
+              <p style={{ marginTop: 0, marginBottom: 10, opacity: 0.7, fontSize: 13 }}>Você pode selecionar mais de um.</p>
+
+              <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                {reasonOptions.map((m) => {
+                  const active = selectedReasons.has(m);
+                  return (
+                    <button
+                      key={m}
+                      type="button"
+                      onClick={() => toggleReason(m)}
+                      disabled={saving}
+                      className={`gaia-btn ${active ? "gaia-btn-primary" : "gaia-btn-outline"}`}
+                      style={{ padding: "10px 14px" }}
+                    >
+                      {m}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div style={{ marginTop: 16, display: "grid", gap: 10 }}>
+              <button
+                disabled={saving || !canContinue}
+                onClick={handleSave}
+                type="button"
+                className={`gaia-btn gaia-btn-primary gaia-btn-block ${saving || !canContinue ? "opacity-60 cursor-not-allowed" : ""}`}
+              >
+                {saving ? "Salvando..." : "Continuar"}
+              </button>
+
+              <button
+                type="button"
+                disabled={saving}
+                onClick={() => nav("/perfil-clinico", { replace: true })}
+                className="gaia-btn gaia-btn-ghost gaia-btn-block"
+              >
+                Voltar
+              </button>
+            </div>
+
+            {msg ? <p style={{ marginTop: 6, color: "#b00020" }}>{msg}</p> : null}
+          </div>
+        </Card>
       </div>
-
-      <hr style={{ margin: "22px 0", opacity: 0.2 }} />
-
-      <h3 style={{ margin: "0 0 8px" }}>Qual é o principal motivo?</h3>
-      <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-        {["Saúde", "Bem-estar", "Curiosidade", "Lazer", "Outro"].map((m) => (
-          <button
-            type="button"
-            key={m}
-            onClick={() => setMainReason(m)}
-            style={{ ...styles.pill, ...(mainReason === m ? styles.pillActive : {}) }}
-          >
-            {m}
-          </button>
-        ))}
-      </div>
-
-      <div className="flex gap-2 mt-4">
-        <button
-          disabled={saving || !canContinue}
-          onClick={handleSave}
-          type="button"
-          className={`${PRIMARY_BUTTON_CLASS} w-full ${saving || !canContinue ? "opacity-60 cursor-not-allowed" : ""}`}
-        >
-          {saving ? "Salvando..." : "Continuar"}
-        </button>
-      </div>
-
-      {msg ? <p style={{ marginTop: 12, color: "#b00020" }}>{msg}</p> : null}
-    </Card>
+    </div>
   );
 }
-
 // -------------------- Patologias --------------------
 function Patologias({ session, profile, onProfileSaved }) {
   const nav = useNavigate();
