@@ -16,7 +16,10 @@ import SelectButton from "./components/ui/SelectButton.jsx";
 console.log("APP BOOT");
 console.log("SUPABASE INIT", import.meta.env.VITE_SUPABASE_URL);
 // -------------------- Helpers --------------------
-
+async function saveProfileAndReload(userId, patch) {
+  await upsertMyProfile(userId, patch);
+  return await fetchMyProfile(userId);
+}
 const CART_STORAGE_KEY = "gaia.cart.items";
 
 function readCart() {
@@ -687,7 +690,6 @@ function Wizard({ session, profile, onProfileSaved }) {
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState("");
 
-  const [ageRange, setAgeRange] = useState(profile?.age_range ?? "");
   const [mainGoal, setMainGoal] = useState(profile?.main_goal ?? "");
   const [mainReason, setMainReason] = useState(profile?.main_reason ?? "");
 
@@ -724,7 +726,7 @@ function Wizard({ session, profile, onProfileSaved }) {
       return;
     }
 
-    const ok = Boolean(ageRange && mainGoal && mainReason);
+    const ok = Boolean(mainGoal && mainReason);
     if (!ok) {
       setMsg("Preencha todas as informações para continuar.");
       setSaving(false);
@@ -733,7 +735,6 @@ function Wizard({ session, profile, onProfileSaved }) {
 
     try {
       const patch = {
-        age_range: ageRange,
         main_goal: mainGoal,
         main_reason: mainReason,
       };
