@@ -1427,15 +1427,16 @@ function AlertasUso() {
   return (
     <Card>
       <h2 style={{ marginTop: 0 }}>Alertas de uso</h2>
-      <p style={{ opacity: 0.85, lineHeight: 1.5 }}>
-        Produtos à base de canabinoides não substituem avaliação médica. Use somente conforme orientação
-        profissional e respeite as doses recomendadas.
+      <p>
+        Produtos à base de canabinoides não substituem avaliação médica. Use somente conforme orientação profissional e respeite as doses recomendadas.
       </p>
-      <p style={{ opacity: 0.85, lineHeight: 1.5 }}>
-        Evite dirigir ou operar máquinas se houver sonolência. Não combine com álcool ou medicações sem
-        orientação. Em caso de efeitos adversos, procure assistência médica.
+      <hr />
+      <p>
+        Evite dirigir ou operar máquinas se houver sonolência. Não combine com álcool ou medicações sem orientação. Em caso de efeitos adversos, procure assistência médica.
       </p>
-      <p style={{ fontWeight: 800, marginTop: 12 }}>MANTENHA FORA DO ALCANCE DE CRIANÇAS.</p>
+      <p style={{ marginTop: 12, fontWeight: 900 }}>
+        MANTENHA FORA DO ALCANCE DE CRIANÇAS.
+      </p>
     </Card>
   );
 }
