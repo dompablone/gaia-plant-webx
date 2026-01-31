@@ -1009,16 +1009,31 @@ function Patologias({ session, profile, onProfileSaved }) {
         <h2 style={{ marginTop: 0, fontSize: 28 }}>O que você busca tratar ou melhorar?</h2>
         <p style={{ marginTop: 6, opacity: 0.75 }}>Selecione uma ou mais opções.</p>
 
-        <div style={styles.choiceGrid2}>
-          {conditions.map((c) => (
-            <SelectButton
-              key={c}
-              className="gp-card-link"
-              active={selectedConditions.includes(c)}
-              title={c}
-              onClick={() => toggle(c)}
-            />
-          ))}
+        <div style={{ display: "grid", gap: 10 }}>
+          {conditions.map((c) => {
+            const active = selectedConditions.includes(c);
+            return (
+              <button
+                key={c}
+                type="button"
+                onClick={() => toggle(c)}
+                disabled={saving}
+                style={{
+                  width: "100%",
+                  textAlign: "left",
+                  padding: "12px 16px",
+                  borderRadius: 16,
+                  border: active ? "2px solid #16a34a" : "1px solid rgba(15,23,42,0.12)",
+                  background: active ? "rgba(22,163,74,0.08)" : "#fff",
+                  fontWeight: 700,
+                  color: "#111",
+                  cursor: saving ? "not-allowed" : "pointer",
+                }}
+              >
+                {c}
+              </button>
+            );
+          })}
         </div>
 
         <div className="flex flex-wrap gap-2 mt-4">
