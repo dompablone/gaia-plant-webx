@@ -12,7 +12,6 @@ import AppDashboard from "./pages/app/AppDashboard.jsx";
 import Perfil from "./pages/app/Perfil.jsx";
 import Medicos from "./pages/app/Medicos.jsx";
 import Layout, { PhoneFrameLayout } from "./components/Layout.jsx";
-import AuthLayout from "./components/layouts/AuthLayout.jsx";
 import SelectButton from "./components/ui/SelectButton.jsx";
 console.log("APP BOOT");
 console.log("SUPABASE INIT", import.meta.env.VITE_SUPABASE_URL);
@@ -108,7 +107,11 @@ function Welcome() {
           <Link to="/login" className="gaia-btn gaia-btn-primary gaia-btn-block">
             Já tenho conta
           </Link>
-          <Link to="/criar-conta" className="gaia-btn gaia-btn-outline gaia-btn-block">
+          <Link
+            to="/criar-conta"
+            className="gaia-btn gaia-btn-outline gaia-btn-block"
+            style={{ color: "#111" }}
+          >
             Criar conta
           </Link>
           <Link to="/conteudos" className="gaia-btn gaia-btn-mist gaia-btn-block">
@@ -755,7 +758,9 @@ function Wizard({ session, profile, onProfileSaved }) {
       { key: "Melhora do Sono", sub: "Ajuda para dormir e manter o descanso." },
       { key: "Mais Calma", sub: "Controle da agitação e do nervosismo diário." },
       { key: "Aumento do Foco", sub: "Mais concentração nas suas atividades." },
+      { key: "Alzheimer", sub: "Suporte para memória, rotina e qualidade de vida." },
       { key: "Menos Estresse", sub: "Melhora do estresse e exaustão diária." },
+      { key: "Burnout", sub: "Exaustão mental e emocional (rotina e recuperação)." },
       { key: "Controle da Ansiedade", sub: "Busca por mais equilíbrio emocional." },
       { key: "Dor Crônica", sub: "Alívio de dores constantes." },
       { key: "Melhora no Esporte", sub: "Mais energia e menos fadiga muscular." },
@@ -1221,7 +1226,7 @@ function Produtos() {
         {msg ? <div style={{ marginTop: 10, color: "#2e7d32", fontSize: 13 }}>{msg}</div> : null}
       </Card>
 
-      <Card>
+    <Card>
         <h3 style={{ marginTop: 0 }}>Óleos de CBD</h3>
         <div style={{ display: "grid", gap: 12, marginTop: 12 }}>
           {oils.map((oil) => {
@@ -1266,29 +1271,29 @@ function Produtos() {
                 <div style={{ opacity: 0.8 }}>{oil.desc}</div>
                 <div style={{ opacity: 0.75, fontSize: 13 }}>Indicado para: {oil.indications}</div>
 
-              <div style={{ marginTop: 6, fontWeight: 700, fontSize: 13 }}>Concentração</div>
-              <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-                {oil.concentrations.map((mg) => (
-                  <button
-                    key={mg}
-                    type="button"
-                    onClick={() => addToCart(oil, mg)}
-                    style={{
-                      border: "1px solid #7fb069",
-                      color: "#2f5d36",
-                      padding: "8px 12px",
-                      borderRadius: 999,
-                      background: "#fff",
-                      fontWeight: 700,
-                      cursor: "pointer",
-                    }}
-                  >
-                    {mg} mg
-                  </button>
-                ))}
+                <div style={{ marginTop: 6, fontWeight: 700, fontSize: 13 }}>Concentração</div>
+                <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                  {oil.concentrations.map((mg) => (
+                    <button
+                      key={mg}
+                      type="button"
+                      onClick={() => addToCart(oil, mg)}
+                      style={{
+                        border: "1px solid #7fb069",
+                        color: "#2f5d36",
+                        padding: "8px 12px",
+                        borderRadius: 999,
+                        background: "#fff",
+                        fontWeight: 700,
+                        cursor: "pointer",
+                      }}
+                    >
+                      {mg} mg
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
-          );
+            );
           })}
         </div>
       </Card>
@@ -1488,6 +1493,7 @@ const HEALTH_FIELDS = [
   { key: "tratamento_atual", label: "Faz algum tratamento?", placeholder: "Qual tratamento?" },
   { key: "usa_remedios", label: "Uso frequente de remédios?", placeholder: "Quais e com que frequência?" },
   { key: "doenca_cronica", label: "Possui doença crônica?", placeholder: "Qual?" },
+  { key: "doenca_autoimune", label: "Possui doença autoimune?", placeholder: "Se quiser, especifique qual(is) e há quanto tempo." },
   { key: "cirurgia", label: "Fez alguma cirurgia?", placeholder: "Qual e quando?" },
   { key: "alergia", label: "Possui alergia?", placeholder: "Qual alergia?" },
 ];
@@ -2010,7 +2016,9 @@ function AppHome({ session, profile, onProfileSaved }) {
       { titulo: "Melhora do Sono", descricao: "Ajuda para dormir e manter o descanso." },
       { titulo: "Mais Calma", descricao: "Controle da agitação e do nervosismo diário." },
       { titulo: "Aumento do Foco", descricao: "Mais concentração nas suas atividades." },
+      { titulo: "Alzheimer", descricao: "Suporte para memória, rotina e qualidade de vida." },
       { titulo: "Menos Estresse", descricao: "Melhora do estresse e exaustão diária." },
+      { titulo: "Burnout", descricao: "Exaustão mental e emocional (rotina e recuperação)." },
       { titulo: "Controle da Ansiedade", descricao: "Busca por mais equilíbrio emocional." },
       { titulo: "Dor Crônica", descricao: "Alívio de dores constantes." },
       { titulo: "Melhora no Esporte", descricao: "Mais energia e menos fadiga muscular." },
@@ -2471,13 +2479,11 @@ export default function App() {
     <Routes>
       <Route path="/" element={<Navigate to={session ? "/app" : "/auth"} replace />} />
 
-      <Route element={<AuthLayout />}>
-        <Route path="/auth" element={<Welcome />} />
-        <Route path="/conteudos" element={<PublicConteudos />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/reset-password" element={<ResetPassword />} />
-        <Route path="/criar-conta" element={<Signup />} />
-      </Route>
+      <Route path="/auth" element={<Welcome />} />
+      <Route path="/conteudos" element={<PublicConteudos />} />
+      <Route path="/login" element={<Login />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
+      <Route path="/criar-conta" element={<Signup />} />
 
       <Route
         path="/start"
