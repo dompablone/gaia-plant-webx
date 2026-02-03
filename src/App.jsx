@@ -1,6 +1,7 @@
 // src/App.jsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Routes, Route, Navigate, Link, useNavigate } from "react-router-dom";
+import EmailConfirmado from "./pages/auth/EmailConfirmado";
 import { supabase, SUPABASE_ENV_OK, SUPABASE_ENV_ERROR } from "./lib/supabase.js";
 import { fetchMyProfile, upsertMyProfile } from "./lib/profileApi.js";
 import { logWarn } from "./lib/telemetry.js";
@@ -2479,6 +2480,7 @@ export default function App() {
   {/* ================= ROTAS PÚBLICAS ================= */}
   <Route element={<AuthLayout />}>
     <Route index element={<Welcome />} />
+    <Route path="/email-confirmado" element={<EmailConfirmado />} />
     <Route path="/auth" element={<Welcome />} />
     <Route path="/login" element={<Login />} />
     <Route path="/criar-conta" element={<Signup />} />
@@ -2564,3 +2566,5 @@ export default function App() {
   {/* ================= FALLBACK ================= */}
   <Route path="*" element={<Navigate to="/" replace />} />
 </Routes>
+);
+}
