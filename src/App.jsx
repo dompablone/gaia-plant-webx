@@ -3,6 +3,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Routes, Route, Navigate, Link, useNavigate } from "react-router-dom";
 import { supabase, SUPABASE_ENV_OK, SUPABASE_ENV_ERROR } from "./lib/supabase.js";
 import { fetchMyProfile, upsertMyProfile } from "./lib/profileApi.js";
+import Layout, { PhoneFrameLayout } from "./components/Layout.jsx";
 import { logWarn } from "./lib/telemetry.js";
 import { normalizeTriage, isPersonalComplete, isWizardComplete, hasConditionsSelected, getNextRoute } from "./lib/triage.js";
 import { styles } from "./styles/inlineStyles.js";
@@ -11,8 +12,7 @@ import Card from "./components/ui/Card.jsx";
 import AppDashboard from "./pages/app/AppDashboard.jsx";
 import Perfil from "./pages/app/Perfil.jsx";
 import Medicos from "./pages/app/Medicos.jsx";
-import AuthLayout from "./components/layouts/AuthLayout.jsx";
-import Layout from "./components/Layout.jsx";
+import { Layout } from "./components/Layout.jsx";
 import SelectButton from "./components/ui/SelectButton.jsx";
 console.log("APP BOOT");
 console.log("SUPABASE INIT", import.meta.env.VITE_SUPABASE_URL);
@@ -2443,13 +2443,6 @@ export default function App() {
   const [profileError, setProfileError] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [sessionLoading, setSessionLoading] = useState(true);
-  async function handleLogout() {
-    try {
-      await supabase.auth.signOut();
-    } finally {
-      navigate("/login", { replace: true });
-    }
-  }
   if (!SUPABASE_ENV_OK) {
     return (
       <div
@@ -2565,53 +2558,61 @@ export default function App() {
     }
   />
 
-  {/* ================= APP LOGADO ================= */}
+ <Routes>
+  {/* ================= ROTAS PÚBLICAS ================= */}
+  <Route element={<AuthLayout />}>
+    <Route index element={<Welcome />} />
+    <Route path="/email-confirmado" element={<EmailConfirmado />} />
+    <Route path="/auth" element={<Welcome />} />
+    <Route path="/login" element={<Login />} />
+    <Route path="/criar-conta" element={<Signup />} />
+    <Route path="/reset-password" element={<ResetPassword />} />
+    <Route path="/conteudos" element={<PublicConteudos />} />
+  </Route>
+
+  {/* ================= FLUXO DE ONBOARDING ================= */}
   <Route
+    path="/start"
     element={
-      <Layout
-        rightSlot={
-          <div style={{ display: "flex", gap: 10 }}>
-            <Link to="/app/carrinho" className="gaia-btn gaia-btn-ghost">
-              Carrinho
-            </Link>
-            <button type="button" onClick={handleLogout} className="gaia-btn gaia-btn-ghost">
-              Sair
-            </button>
-          </div>
-        }
+      <ProfileGate
+        session={session}
+        profile={profile}
+        loadingProfile={loadingProfile}
+        profileError={profileError}
       />
     }
-  >
-    <Route path="/app" element={<AppDashboard session={session} profile={profile} />} />
-    <Route
-      path="/app/perfil"
-      element={<Perfil session={session} profile={profile} onProfileSaved={setProfile} />}
-    />
-    <Route path="/app/historico" element={<Historico profile={profile} />} />
-    <Route path="/app/produtos" element={<Produtos />} />
-    <Route path="/app/carrinho" element={<Carrinho />} />
-    <Route path="/app/pagamentos" element={<Pagamentos />} />
-    <Route path="/app/conteudos" element={<Conteudos session={session} isAdmin={isAdmin} />} />
-    <Route path="/app/medicos" element={<Medicos />} />
-    <Route path="/app/receitas" element={<Receitas />} />
-    <Route path="/app/pedidos" element={<Pedidos />} />
-    <Route path="/app/alertas" element={<AlertasUso />} />
-    <Route
-      path="/app/saude"
-      element={<HealthTriage session={session} profile={profile} onProfileSaved={setProfile} />}
-    />
-    <Route
-      path="/app/emocional"
-      element={<EmotionalTriage session={session} profile={profile} onProfileSaved={setProfile} />}
-    />
-    <Route
-      path="/app/emocional/sintomas"
-      element={<EmotionalSymptoms session={session} profile={profile} onProfileSaved={setProfile} />}
-    />
+  />
+  <Route
+    path="/perfil-clinico"
+    element={<ClinicalProfile session={session} profile={profile} onProfileSaved={setProfile} />}
+  />
+  <Route
+    path="/wizard"
+    element={<Wizard session={session} profile={profile} onProfileSaved={setProfile} />}
+  />
+  <Route
+    path="/patologias"
+    element={<Patologias session={session} profile={profile} onProfileSaved={setProfile} />}
+  />
+
+  {/* ================= APP LOGADO ================= */}
+  <Route path="/app" element={<Layout />}>
+    <Route index element={<AppDashboard session={session} profile={profile} />} />
+    <Route path="perfil" element={<Perfil session={session} profile={profile} onProfileSaved={setProfile} />} />
+    <Route path="historico" element={<Historico profile={profile} />} />
+    <Route path="produtos" element={<Produtos />} />
+    <Route path="carrinho" element={<Carrinho />} />
+    <Route path="pagamentos" element={<Pagamentos />} />
+    <Route path="conteudos" element={<Conteudos session={session} isAdmin={isAdmin} />} />
+    <Route path="medicos" element={<Medicos />} />
+    <Route path="receitas" element={<Receitas />} />
+    <Route path="pedidos" element={<Pedidos />} />
+    <Route path="alertas" element={<AlertasUso />} />
+    <Route path="saude" element={<HealthTriage session={session} profile={profile} onProfileSaved={setProfile} />} />
+    <Route path="emocional" element={<EmotionalTriage session={session} profile={profile} onProfileSaved={setProfile} />} />
+    <Route path="emocional/sintomas" element={<EmotionalSymptoms session={session} profile={profile} onProfileSaved={setProfile} />} />
   </Route>
 
   {/* ================= FALLBACK ================= */}
   <Route path="*" element={<Navigate to="/" replace />} />
 </Routes>
-);
-}
