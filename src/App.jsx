@@ -12,7 +12,7 @@ import AppDashboard from "./pages/app/AppDashboard.jsx";
 import Perfil from "./pages/app/Perfil.jsx";
 import Medicos from "./pages/app/Medicos.jsx";
 import AuthLayout from "./components/layouts/AuthLayout.jsx";
-import Layout, { PhoneFrameLayout } from "./components/Layout.jsx";
+import Layout from "./components/Layout.jsx";
 import SelectButton from "./components/ui/SelectButton.jsx";
 console.log("APP BOOT");
 console.log("SUPABASE INIT", import.meta.env.VITE_SUPABASE_URL);
@@ -2443,6 +2443,13 @@ export default function App() {
   const [profileError, setProfileError] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [sessionLoading, setSessionLoading] = useState(true);
+  async function handleLogout() {
+    try {
+      await supabase.auth.signOut();
+    } finally {
+      navigate("/login", { replace: true });
+    }
+  }
   if (!SUPABASE_ENV_OK) {
     return (
       <div
@@ -2559,32 +2566,48 @@ export default function App() {
   />
 
   {/* ================= APP LOGADO ================= */}
-  <Route element={<PhoneFrameLayout />}>
-    <Route path="/app" element={<Layout />}>
-      <Route index element={<AppDashboard session={session} profile={profile} />} />
-      <Route path="perfil" element={<Perfil session={session} profile={profile} onProfileSaved={setProfile} />} />
-      <Route path="historico" element={<Historico profile={profile} />} />
-      <Route path="produtos" element={<Produtos />} />
-      <Route path="carrinho" element={<Carrinho />} />
-      <Route path="pagamentos" element={<Pagamentos />} />
-      <Route path="conteudos" element={<Conteudos session={session} isAdmin={isAdmin} />} />
-      <Route path="medicos" element={<Medicos />} />
-      <Route path="receitas" element={<Receitas />} />
-      <Route path="pedidos" element={<Pedidos />} />
-      <Route path="alertas" element={<AlertasUso />} />
-      <Route
-        path="saude"
-        element={<HealthTriage session={session} profile={profile} onProfileSaved={setProfile} />}
+  <Route
+    element={
+      <Layout
+        rightSlot={
+          <div style={{ display: "flex", gap: 10 }}>
+            <Link to="/app/carrinho" className="gaia-btn gaia-btn-ghost">
+              Carrinho
+            </Link>
+            <button type="button" onClick={handleLogout} className="gaia-btn gaia-btn-ghost">
+              Sair
+            </button>
+          </div>
+        }
       />
-      <Route
-        path="emocional"
-        element={<EmotionalTriage session={session} profile={profile} onProfileSaved={setProfile} />}
-      />
-      <Route
-        path="emocional/sintomas"
-        element={<EmotionalSymptoms session={session} profile={profile} onProfileSaved={setProfile} />}
-      />
-    </Route>
+    }
+  >
+    <Route path="/app" element={<AppDashboard session={session} profile={profile} />} />
+    <Route
+      path="/app/perfil"
+      element={<Perfil session={session} profile={profile} onProfileSaved={setProfile} />}
+    />
+    <Route path="/app/historico" element={<Historico profile={profile} />} />
+    <Route path="/app/produtos" element={<Produtos />} />
+    <Route path="/app/carrinho" element={<Carrinho />} />
+    <Route path="/app/pagamentos" element={<Pagamentos />} />
+    <Route path="/app/conteudos" element={<Conteudos session={session} isAdmin={isAdmin} />} />
+    <Route path="/app/medicos" element={<Medicos />} />
+    <Route path="/app/receitas" element={<Receitas />} />
+    <Route path="/app/pedidos" element={<Pedidos />} />
+    <Route path="/app/alertas" element={<AlertasUso />} />
+    <Route
+      path="/app/saude"
+      element={<HealthTriage session={session} profile={profile} onProfileSaved={setProfile} />}
+    />
+    <Route
+      path="/app/emocional"
+      element={<EmotionalTriage session={session} profile={profile} onProfileSaved={setProfile} />}
+    />
+    <Route
+      path="/app/emocional/sintomas"
+      element={<EmotionalSymptoms session={session} profile={profile} onProfileSaved={setProfile} />}
+    />
   </Route>
 
   {/* ================= FALLBACK ================= */}
