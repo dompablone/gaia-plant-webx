@@ -3,7 +3,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Routes, Route, Navigate, Link, useNavigate } from "react-router-dom";
 import { supabase, SUPABASE_ENV_OK, SUPABASE_ENV_ERROR } from "./lib/supabase.js";
 import { fetchMyProfile, upsertMyProfile } from "./lib/profileApi.js";
-import Layout, { PhoneFrameLayout } from "./components/Layout.jsx";
+import Layout from "./components/Layout.jsx";
 import { logWarn } from "./lib/telemetry.js";
 import { normalizeTriage, isPersonalComplete, isWizardComplete, hasConditionsSelected, getNextRoute } from "./lib/triage.js";
 import { styles } from "./styles/inlineStyles.js";
@@ -2580,5 +2580,5 @@ export default function App() {
       </Route>
 
       {/* ================= FALLBACK ================= */}
-      <Route path="*" element={<Navigate to="/auth" replace />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
