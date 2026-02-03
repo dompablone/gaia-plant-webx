@@ -1,5 +1,5 @@
 import React from "react";
-import { Link } from "react-router-dom";
+import { Link, Outlet } from "react-router-dom";
 import { GAIA_ICON } from "../lib/constants/ui.js";
 
 /**
@@ -66,9 +66,11 @@ export default function Layout({ children, title, rightSlot }) {
       </header>
 
       <main className="w-full" style={{ padding: "18px 16px" }}>
-        <div className="mx-auto w-full" style={{ maxWidth: 980 }}>
-          {children}
-        </div>
+        <PhoneFrameLayout maxWidth={430}>
+          <div className="w-full">
+            {children != null ? children : <Outlet />}
+          </div>
+        </PhoneFrameLayout>
       </main>
     </div>
   );

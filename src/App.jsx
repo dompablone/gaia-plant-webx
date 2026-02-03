@@ -2531,7 +2531,10 @@ export default function App() {
  
   return (
     <Routes>
-      {/* ================= ROTAS PÚBLICAS ================= */}
+      {/* ROOT */}
+      <Route path="/" element={<Navigate to="/auth" replace />} />
+
+      {/* ROTAS PÚBLICAS */}
       <Route element={<AuthLayout />}>
         <Route index element={<Welcome />} />
         <Route path="/auth" element={<Welcome />} />
@@ -2542,60 +2545,135 @@ export default function App() {
         <Route path="/conteudos" element={<PublicConteudos />} />
       </Route>
 
-      {/* ================= FLUXO DE ONBOARDING ================= */}
+      {/* ONBOARDING */}
       <Route
         path="/start"
-        element={<ProfileGate session={session} profile={profile} loadingProfile={loadingProfile} profileError={profileError} />}
+        element={
+          <ProfileGate
+            session={session}
+            profile={profile}
+            loadingProfile={loadingProfile}
+            profileError={profileError}
+          />
+        }
       />
-      <Route path="/perfil-clinico" element={<ClinicalProfile session={session} profile={profile} onProfileSaved={setProfile} />} />
-      <Route path="/wizard" element={<Wizard session={session} profile={profile} onProfileSaved={setProfile} />} />
-      <Route path="/patologias" element={<Patologias session={session} profile={profile} onProfileSaved={setProfile} />} />
+      <Route
+        path="/perfil-clinico"
+        element={
+          <ClinicalProfile
+            session={session}
+            profile={profile}
+            onProfileSaved={setProfile}
+          />
+        }
+      />
+      <Route
+        path="/wizard"
+        element={
+          <Wizard
+            session={session}
+            profile={profile}
+            onProfileSaved={setProfile}
+          />
+        }
+      />
+      <Route
+        path="/patologias"
+        element={
+          <Patologias
+            session={session}
+            profile={profile}
+            onProfileSaved={setProfile}
+          />
+        }
+      />
 
-      {/* ================= APP LOGADO ================= */}
+      {/* APP LOGADO */}
       <Route
         path="/app"
         element={
           <Layout
             rightSlot={
               <div style={{ display: "flex", gap: 10 }}>
-                <Link to="/app/carrinho" className="gaia-btn gaia-btn-ghost">Carrinho</Link>
-                <Link to="/sair" className="gaia-btn gaia-btn-ghost">Sair</Link>
+                <Link to="/app/carrinho" className="gaia-btn gaia-btn-ghost">
+                  Carrinho
+                </Link>
+                <Link to="/sair" className="gaia-btn gaia-btn-ghost">
+                  Sair
+                </Link>
               </div>
             }
-          />
+          >
+            <Outlet />
+          </Layout>
         }
       >
         <Route index element={<Navigate to="inicio" replace />} />
-        <Route path="inicio" element={<AppDashboard session={session} profile={profile} />} />
-        <Route path="perfil" element={<Perfil session={session} profile={profile} onProfileSaved={setProfile} />} />
+        <Route
+          path="inicio"
+          element={<AppDashboard session={session} profile={profile} />}
+        />
+        <Route
+          path="perfil"
+          element={
+            <Perfil
+              session={session}
+              profile={profile}
+              onProfileSaved={setProfile}
+            />
+          }
+        />
         <Route path="historico" element={<Historico profile={profile} />} />
         <Route path="produtos" element={<Produtos />} />
         <Route path="carrinho" element={<Carrinho />} />
         <Route path="pagamentos" element={<Pagamentos />} />
-        <Route path="conteudos" element={<Conteudos session={session} isAdmin={isAdmin} />} />
+        <Route
+          path="conteudos"
+          element={<Conteudos session={session} isAdmin={isAdmin} />}
+        />
         <Route path="medicos" element={<Medicos />} />
         <Route path="receitas" element={<Receitas />} />
         <Route path="pedidos" element={<Pedidos />} />
         <Route path="alertas" element={<AlertasUso />} />
-        <Route path="saude" element={<HealthTriage session={session} profile={profile} onProfileSaved={setProfile} />} />
-        <Route path="emocional" element={<EmotionalTriage session={session} profile={profile} onProfileSaved={setProfile} />} />
-        <Route path="emocional/sintomas" element={<EmotionalSymptoms session={session} profile={profile} onProfileSaved={setProfile} />} />
-
-        {/* admin routes (se existirem no arquivo) */}
         <Route
-          path="admin/conteudos"
+          path="saude"
           element={
-            <RequireAdmin session={session} isAdmin={isAdmin}>
-              <AdminContents session={session} />
-            </RequireAdmin>
+            <HealthTriage
+              session={session}
+              profile={profile}
+              onProfileSaved={setProfile}
+            />
+          }
+        />
+        <Route
+          path="emocional"
+          element={
+            <EmotionalTriage
+              session={session}
+              profile={profile}
+              onProfileSaved={setProfile}
+            />
+          }
+        />
+        <Route
+          path="emocional/sintomas"
+          element={
+            <EmotionalSymptoms
+              session={session}
+              profile={profile}
+              onProfileSaved={setProfile}
+            />
           }
         />
       </Route>
 
-      {/* ================= LOGOUT ================= */}
-      <Route path="/sair" element={<Logout onLoggedOut={() => setSession(null)} />} />
+      {/* LOGOUT */}
+      <Route
+        path="/sair"
+        element={<Logout onLoggedOut={() => setSession(null)} />}
+      />
 
-      {/* ================= FALLBACK ================= */}
+      {/* FALLBACK */}
       <Route path="*" element={<Navigate to="/auth" replace />} />
     </Routes>
   );
