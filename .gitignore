@@ -28,3 +28,4 @@ android/build
 
 # Gradle wrapper dists cache (NUNCA versionar)
 gradle jdk/wrapper/dists
+.env*.local

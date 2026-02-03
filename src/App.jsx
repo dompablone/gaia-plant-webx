@@ -2409,7 +2409,6 @@ function EmotionalSymptoms({ session, profile, onProfileSaved }) {
   );
 }
 
-
 // -------------------- App (carrega session/profile + rotas) --------------------
 export default function App() {
   const navigate = useNavigate();
@@ -2477,91 +2476,91 @@ export default function App() {
 
   return (
     <Routes>
-      <Route path="/" element={<Navigate to={session ? "/app" : "/auth"} replace />} />
+  {/* ================= ROTAS PÚBLICAS ================= */}
+  <Route element={<AuthLayout />}>
+    <Route index element={<Welcome />} />
+    <Route path="/auth" element={<Welcome />} />
+    <Route path="/login" element={<Login />} />
+    <Route path="/criar-conta" element={<Signup />} />
+    <Route path="/reset-password" element={<ResetPassword />} />
+    <Route path="/conteudos" element={<PublicConteudos />} />
+  </Route>
 
-      <Route path="/auth" element={<Welcome />} />
-      <Route path="/conteudos" element={<PublicConteudos />} />
-      <Route path="/login" element={<Login />} />
-      <Route path="/reset-password" element={<ResetPassword />} />
-      <Route path="/criar-conta" element={<Signup />} />
-
-      <Route
-        path="/start"
-        element={
-          <ProfileGate
-            session={session}
-            profile={profile}
-            loadingProfile={loadingProfile}
-            profileError={profileError}
-          />
-        }
+  {/* ================= FLUXO DE ONBOARDING ================= */}
+  <Route
+    path="/start"
+    element={
+      <ProfileGate
+        session={session}
+        profile={profile}
+        loadingProfile={loadingProfile}
+        profileError={profileError}
       />
+    }
+  />
 
-      <Route
-        path="/perfil-clinico"
-        element={
-          <ClinicalProfile
-            session={session}
-            profile={profile}
-            onProfileSaved={setProfile}
-          />
-        }
+  <Route
+    path="/perfil-clinico"
+    element={
+      <ClinicalProfile
+        session={session}
+        profile={profile}
+        onProfileSaved={setProfile}
       />
+    }
+  />
 
-      <Route
-        path="/wizard"
-        element={
-          <Wizard
-            session={session}
-            profile={profile}
-            onProfileSaved={setProfile}
-          />
-        }
+  <Route
+    path="/wizard"
+    element={
+      <Wizard
+        session={session}
+        profile={profile}
+        onProfileSaved={setProfile}
       />
+    }
+  />
 
-      <Route
-        path="/patologias"
-        element={
-          <Patologias
-            session={session}
-            profile={profile}
-            onProfileSaved={setProfile}
-          />
-        }
+  <Route
+    path="/patologias"
+    element={
+      <Patologias
+        session={session}
+        profile={profile}
+        onProfileSaved={setProfile}
       />
+    }
+  />
 
-      <Route element={<PhoneFrameLayout />}>
-        <Route path="/app" element={<Layout />}>
-          <Route index element={<AppDashboard session={session} profile={profile} />} />
-          <Route
-            path="perfil"
-            element={<Perfil session={session} profile={profile} onProfileSaved={setProfile} />}
-          />
-          <Route path="historico" element={<Historico profile={profile} />} />
-          <Route path="produtos" element={<Produtos />} />
-          <Route path="carrinho" element={<Carrinho />} />
-          <Route path="pagamentos" element={<Pagamentos />} />
-          <Route path="conteudos" element={<Conteudos session={session} isAdmin={isAdmin} />} />
-          <Route path="medicos" element={<Medicos />} />
-          <Route path="receitas" element={<Receitas />} />
-          <Route path="pedidos" element={<Pedidos />} />
-          <Route path="alertas" element={<AlertasUso />} />
-          <Route
-            path="saude"
-            element={<HealthTriage session={session} profile={profile} onProfileSaved={setProfile} />}
-          />
-          <Route
-            path="emocional"
-            element={<EmotionalTriage session={session} profile={profile} onProfileSaved={setProfile} />}
-          />
-          <Route
-            path="emocional/sintomas"
-            element={<EmotionalSymptoms session={session} profile={profile} onProfileSaved={setProfile} />}
-          />
-        </Route>
-      </Route>
+  {/* ================= APP LOGADO ================= */}
+  <Route element={<PhoneFrameLayout />}>
+    <Route path="/app" element={<Layout />}>
+      <Route index element={<AppDashboard session={session} profile={profile} />} />
+      <Route path="perfil" element={<Perfil session={session} profile={profile} onProfileSaved={setProfile} />} />
+      <Route path="historico" element={<Historico profile={profile} />} />
+      <Route path="produtos" element={<Produtos />} />
+      <Route path="carrinho" element={<Carrinho />} />
+      <Route path="pagamentos" element={<Pagamentos />} />
+      <Route path="conteudos" element={<Conteudos session={session} isAdmin={isAdmin} />} />
+      <Route path="medicos" element={<Medicos />} />
+      <Route path="receitas" element={<Receitas />} />
+      <Route path="pedidos" element={<Pedidos />} />
+      <Route path="alertas" element={<AlertasUso />} />
+      <Route
+        path="saude"
+        element={<HealthTriage session={session} profile={profile} onProfileSaved={setProfile} />}
+      />
+      <Route
+        path="emocional"
+        element={<EmotionalTriage session={session} profile={profile} onProfileSaved={setProfile} />}
+      />
+      <Route
+        path="emocional/sintomas"
+        element={<EmotionalSymptoms session={session} profile={profile} onProfileSaved={setProfile} />}
+      />
+    </Route>
+  </Route>
 
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
-  );
-}
+  {/* ================= FALLBACK ================= */}
+  <Route path="*" element={<Navigate to="/" replace />} />
+</Routes>
