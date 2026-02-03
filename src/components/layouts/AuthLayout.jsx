@@ -1,9 +1,6 @@
 import { Outlet, Link } from "react-router-dom";
 import { GAIA_ICON } from "../../lib/constants/ui.js";
 
-// Reusa o CSS global do app onde estão as classes gaia-* (auth shell)
-import "../../App.css";
-
 export default function AuthLayout() {
   return (
     <div className="gaia-auth-shell">
