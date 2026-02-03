@@ -11,7 +11,8 @@ import Card from "./components/ui/Card.jsx";
 import AppDashboard from "./pages/app/AppDashboard.jsx";
 import Perfil from "./pages/app/Perfil.jsx";
 import Medicos from "./pages/app/Medicos.jsx";
-import Layout from "./components/Layout.jsx";
+import AuthLayout from "./components/layouts/AuthLayout.jsx";
+import Layout, { PhoneFrameLayout } from "./components/Layout.jsx";
 import SelectButton from "./components/ui/SelectButton.jsx";
 console.log("APP BOOT");
 console.log("SUPABASE INIT", import.meta.env.VITE_SUPABASE_URL);
@@ -2558,7 +2559,7 @@ export default function App() {
   />
 
   {/* ================= APP LOGADO ================= */}
-  <Route element={<Layout />}>
+  <Route element={<PhoneFrameLayout />}>
     <Route path="/app" element={<Layout />}>
       <Route index element={<AppDashboard session={session} profile={profile} />} />
       <Route path="perfil" element={<Perfil session={session} profile={profile} onProfileSaved={setProfile} />} />
