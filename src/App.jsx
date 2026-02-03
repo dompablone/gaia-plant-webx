@@ -12,7 +12,6 @@ import Card from "./components/ui/Card.jsx";
 import AppDashboard from "./pages/app/AppDashboard.jsx";
 import Perfil from "./pages/app/Perfil.jsx";
 import Medicos from "./pages/app/Medicos.jsx";
-import { Layout } from "./components/Layout.jsx";
 import SelectButton from "./components/ui/SelectButton.jsx";
 console.log("APP BOOT");
 console.log("SUPABASE INIT", import.meta.env.VITE_SUPABASE_URL);
@@ -2501,118 +2500,85 @@ export default function App() {
 
   return (
     <Routes>
-  {/* ================= ROTAS PÚBLICAS ================= */}
-  <Route element={<AuthLayout />}>
-    <Route index element={<Welcome />} />
-    <Route path="/email-confirmado" element={<EmailConfirmado />} />
-    <Route path="/auth" element={<Welcome />} />
-    <Route path="/login" element={<Login />} />
-    <Route path="/criar-conta" element={<Signup />} />
-    <Route path="/reset-password" element={<ResetPassword />} />
-    <Route path="/conteudos" element={<PublicConteudos />} />
-  </Route>
+      {/* ================= ROTAS PÚBLICAS ================= */}
+      <Route element={<AuthLayout />}>
+        <Route index element={<Welcome />} />
+        <Route path="/email-confirmado" element={<EmailConfirmado />} />
+        <Route path="/auth" element={<Welcome />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/criar-conta" element={<Signup />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/conteudos" element={<PublicConteudos />} />
+      </Route>
 
-  {/* ================= FLUXO DE ONBOARDING ================= */}
-  <Route
-    path="/start"
-    element={
-      <ProfileGate
-        session={session}
-        profile={profile}
-        loadingProfile={loadingProfile}
-        profileError={profileError}
+      {/* ================= FLUXO DE ONBOARDING ================= */}
+      <Route
+        path="/start"
+        element={
+          <ProfileGate
+            session={session}
+            profile={profile}
+            loadingProfile={loadingProfile}
+            profileError={profileError}
+          />
+        }
       />
-    }
-  />
 
-  <Route
-    path="/perfil-clinico"
-    element={
-      <ClinicalProfile
-        session={session}
-        profile={profile}
-        onProfileSaved={setProfile}
+      <Route
+        path="/perfil-clinico"
+        element={<ClinicalProfile session={session} profile={profile} onProfileSaved={setProfile} />}
       />
-    }
-  />
 
-  <Route
-    path="/wizard"
-    element={
-      <Wizard
-        session={session}
-        profile={profile}
-        onProfileSaved={setProfile}
+      <Route
+        path="/wizard"
+        element={<Wizard session={session} profile={profile} onProfileSaved={setProfile} />}
       />
-    }
-  />
 
-  <Route
-    path="/patologias"
-    element={
-      <Patologias
-        session={session}
-        profile={profile}
-        onProfileSaved={setProfile}
+      <Route
+        path="/patologias"
+        element={<Patologias session={session} profile={profile} onProfileSaved={setProfile} />}
       />
-    }
-  />
 
- <Routes>
-  {/* ================= ROTAS PÚBLICAS ================= */}
-  <Route element={<AuthLayout />}>
-    <Route index element={<Welcome />} />
-    <Route path="/email-confirmado" element={<EmailConfirmado />} />
-    <Route path="/auth" element={<Welcome />} />
-    <Route path="/login" element={<Login />} />
-    <Route path="/criar-conta" element={<Signup />} />
-    <Route path="/reset-password" element={<ResetPassword />} />
-    <Route path="/conteudos" element={<PublicConteudos />} />
-  </Route>
+      {/* ================= APP LOGADO ================= */}
+      <Route
+        path="/app"
+        element={
+          <Layout
+            rightSlot={
+              <div style={{ display: "flex", gap: 10 }}>
+                <Link to="/app/carrinho" className="gaia-btn gaia-btn-ghost">
+                  Carrinho
+                </Link>
+                <Link to="/sair" className="gaia-btn gaia-btn-ghost">
+                  Sair
+                </Link>
+              </div>
+            }
+          />
+        }
+      >
+        {/* Se entrar em /app, manda pra /app/inicio */}
+        <Route index element={<Navigate to="inicio" replace />} />
 
-  {/* ================= FLUXO DE ONBOARDING ================= */}
-  <Route
-    path="/start"
-    element={
-      <ProfileGate
-        session={session}
-        profile={profile}
-        loadingProfile={loadingProfile}
-        profileError={profileError}
-      />
-    }
-  />
-  <Route
-    path="/perfil-clinico"
-    element={<ClinicalProfile session={session} profile={profile} onProfileSaved={setProfile} />}
-  />
-  <Route
-    path="/wizard"
-    element={<Wizard session={session} profile={profile} onProfileSaved={setProfile} />}
-  />
-  <Route
-    path="/patologias"
-    element={<Patologias session={session} profile={profile} onProfileSaved={setProfile} />}
-  />
+        <Route path="inicio" element={<AppDashboard session={session} profile={profile} />} />
+        <Route path="perfil" element={<Perfil session={session} profile={profile} onProfileSaved={setProfile} />} />
+        <Route path="historico" element={<Historico profile={profile} />} />
+        <Route path="produtos" element={<Produtos />} />
+        <Route path="carrinho" element={<Carrinho />} />
+        <Route path="pagamentos" element={<Pagamentos />} />
+        <Route path="conteudos" element={<Conteudos session={session} isAdmin={isAdmin} />} />
+        <Route path="medicos" element={<Medicos />} />
+        <Route path="receitas" element={<Receitas />} />
+        <Route path="pedidos" element={<Pedidos />} />
+        <Route path="alertas" element={<AlertasUso />} />
+        <Route path="saude" element={<HealthTriage session={session} profile={profile} onProfileSaved={setProfile} />} />
+        <Route path="emocional" element={<EmotionalTriage session={session} profile={profile} onProfileSaved={setProfile} />} />
+        <Route
+          path="emocional/sintomas"
+          element={<EmotionalSymptoms session={session} profile={profile} onProfileSaved={setProfile} />}
+        />
+      </Route>
 
-  {/* ================= APP LOGADO ================= */}
-  <Route path="/app" element={<Layout />}>
-    <Route index element={<AppDashboard session={session} profile={profile} />} />
-    <Route path="perfil" element={<Perfil session={session} profile={profile} onProfileSaved={setProfile} />} />
-    <Route path="historico" element={<Historico profile={profile} />} />
-    <Route path="produtos" element={<Produtos />} />
-    <Route path="carrinho" element={<Carrinho />} />
-    <Route path="pagamentos" element={<Pagamentos />} />
-    <Route path="conteudos" element={<Conteudos session={session} isAdmin={isAdmin} />} />
-    <Route path="medicos" element={<Medicos />} />
-    <Route path="receitas" element={<Receitas />} />
-    <Route path="pedidos" element={<Pedidos />} />
-    <Route path="alertas" element={<AlertasUso />} />
-    <Route path="saude" element={<HealthTriage session={session} profile={profile} onProfileSaved={setProfile} />} />
-    <Route path="emocional" element={<EmotionalTriage session={session} profile={profile} onProfileSaved={setProfile} />} />
-    <Route path="emocional/sintomas" element={<EmotionalSymptoms session={session} profile={profile} onProfileSaved={setProfile} />} />
-  </Route>
-
-  {/* ================= FALLBACK ================= */}
-  <Route path="*" element={<Navigate to="/" replace />} />
-</Routes>
+      {/* ================= FALLBACK ================= */}
+      <Route path="*" element={<Navigate to="/auth" replace />} />
+    </Routes>
