@@ -1,7 +1,6 @@
 // src/App.jsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Routes, Route, Navigate, Link, useNavigate } from "react-router-dom";
-import EmailConfirmado from "./pages/auth/EmailConfirmado";
 import { supabase, SUPABASE_ENV_OK, SUPABASE_ENV_ERROR } from "./lib/supabase.js";
 import { fetchMyProfile, upsertMyProfile } from "./lib/profileApi.js";
 import { logWarn } from "./lib/telemetry.js";
@@ -12,7 +11,7 @@ import Card from "./components/ui/Card.jsx";
 import AppDashboard from "./pages/app/AppDashboard.jsx";
 import Perfil from "./pages/app/Perfil.jsx";
 import Medicos from "./pages/app/Medicos.jsx";
-import Layout, { PhoneFrameLayout } from "./components/Layout.jsx";
+import Layout from "./components/Layout.jsx";
 import SelectButton from "./components/ui/SelectButton.jsx";
 console.log("APP BOOT");
 console.log("SUPABASE INIT", import.meta.env.VITE_SUPABASE_URL);
@@ -93,6 +92,30 @@ function Input(props) {
 }
 
 // -------------------- Auth Pages --------------------
+function EmailConfirmado() {
+  return (
+    <div style={styles.authPage}>
+      <div style={styles.authCard}>
+        <div style={{ textAlign: "center", marginBottom: 12 }}>
+          <img src={GAIA_ICON} alt="Gaia Plant" style={{ width: 180, height: 180 }} />
+          <h2 style={styles.authTitle}>E-mail confirmado ✅</h2>
+          <p style={styles.authSubtitle}>
+            Sua conta foi confirmada com sucesso. Agora você já pode entrar na Gaia Plant.
+          </p>
+        </div>
+
+        <div style={{ display: "grid", gap: 10 }}>
+          <Link to="/login" className="gaia-btn gaia-btn-primary gaia-btn-block">
+            Voltar para o login
+          </Link>
+          <Link to="/auth" className="gaia-btn gaia-btn-ghost gaia-btn-block">
+            Voltar para o início
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+}
 function Welcome() {
   return (
     <div style={{ maxWidth: 360, margin: "0 auto", textAlign: "center", padding: "20px 16px" }}>
@@ -2535,7 +2558,7 @@ export default function App() {
   />
 
   {/* ================= APP LOGADO ================= */}
-  <Route element={<PhoneFrameLayout />}>
+  <Route element={<Layout />}>
     <Route path="/app" element={<Layout />}>
       <Route index element={<AppDashboard session={session} profile={profile} />} />
       <Route path="perfil" element={<Perfil session={session} profile={profile} onProfileSaved={setProfile} />} />
