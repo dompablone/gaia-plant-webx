@@ -2592,18 +2592,7 @@ export default function App() {
       <Route
         path="/app"
         element={
-          <Layout
-            rightSlot={
-              <div style={{ display: "flex", gap: 10 }}>
-                <Link to="/app/carrinho" className="gaia-btn gaia-btn-ghost">
-                  Carrinho
-                </Link>
-                <Link to="/sair" className="gaia-btn gaia-btn-ghost">
-                  Sair
-                </Link>
-              </div>
-            }
-          >
+          <Layout>
             <Outlet />
           </Layout>
         }

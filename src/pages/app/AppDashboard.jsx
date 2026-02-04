@@ -1,14 +1,10 @@
-
-
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import Card from "../../components/ui/Card.jsx";
-import { PRIMARY_BUTTON_CLASS } from "../../lib/constants/ui.js";
+import { GAIA_ICON, PRIMARY_BUTTON_CLASS } from "../../lib/constants/ui.js";
 import { normalizeTriage } from "../../lib/triage.js";
 
-// -------------------- AppDashboard (home do app após questionários) --------------------
-export default function AppDashboard({ session, profile }) {
+export default function AppDashboard({ profile }) {
   const nav = useNavigate();
   const whatsappMessage = encodeURIComponent(
     `Olá sou ${profile?.full_name ?? "um paciente"}, gostaria de mais informações !`
@@ -19,31 +15,31 @@ export default function AppDashboard({ session, profile }) {
     {
       title: "Conteúdos educativos personalizados",
       emoji: "📚",
-      desc: "Guias, e-books e conteúdos recomendados.",
+      desc: "Guias, e-books e curadoria alinhada ao seu objetivo.",
       to: "/app/conteudos",
     },
     {
       title: "Produtos",
       emoji: "💧",
-      desc: "Catálogo de óleos e kits (MVP).",
+      desc: "Óleos, kits e suplementos recomendados pelo seu cuidado.",
       to: "/app/produtos",
     },
     {
       title: "Agende uma consulta online",
       emoji: "🩺",
-      desc: "Escolha um médico e inicie um atendimento.",
+      desc: "Escolha um médico e dê o próximo passo do acompanhamento.",
       to: "/app/medicos",
     },
     {
       title: "Meu perfil",
       emoji: "🧾",
-      desc: "Revise e edite seus dados e preferências.",
+      desc: "Revise seus dados, preferências e metas clínicas.",
       to: "/app/perfil",
     },
     {
       title: "Meu histórico",
       emoji: "🕘",
-      desc: "Veja o que você respondeu e atualize quando quiser.",
+      desc: "Veja o que já respondeu e atualize quando quiser.",
       to: "/app/historico",
     },
   ];
@@ -54,164 +50,473 @@ export default function AppDashboard({ session, profile }) {
     { title: "Alertas de uso", emoji: "⚠️", to: "/app/alertas" },
   ];
 
-  const cardButtonStyle = {
-    textAlign: "left",
-    width: "100%",
-    padding: 16,
-    borderRadius: 16,
-    border: "1px solid rgba(0,0,0,0.12)",
+  const hasHealth =
+    profile?.health_triage &&
+    Object.keys(normalizeTriage(profile.health_triage)).length > 0;
+  const hasEmotional =
+    profile?.emotional_triage &&
+    Object.keys(normalizeTriage(profile.emotional_triage)).length > 0;
+
+  const goalBadge = profile?.main_goal;
+  const greetingName = profile?.full_name?.split(" ")[0] ?? "Pablo";
+  const heroSubtext = "Este é o seu painel de cuidado personalizado";
+
+  const mainAction =
+    !hasHealth
+      ? { label: "Responder triagem de saúde", path: "/app/saude" }
+      : hasHealth && !hasEmotional
+      ? { label: "Responder triagem emocional", path: "/app/emocional" }
+      : null;
+
+  function handleWhatsApp() {
+    setWhatsappActive(true);
+    window.open(
+      `https://wa.me/5531995298192?text=${whatsappMessage}`,
+      "_blank",
+      "noopener"
+    );
+  }
+
+  const actionCardStyle = {
+    display: "flex",
+    alignItems: "flex-start",
+    gap: 14,
+    borderRadius: 22,
+    border: "1px solid rgba(15,23,42,0.08)",
     background: "#fff",
+    padding: "18px 18px",
+    boxShadow: "0 14px 26px rgba(15,23,42,0.10)",
+    textAlign: "left",
     cursor: "pointer",
-    color: "#111",
-    fontWeight: 700,
+    transition: "transform 180ms ease",
   };
 
-  const hasHealth =
-    profile?.health_triage && Object.keys(normalizeTriage(profile.health_triage)).length > 0;
-  const hasEmotional =
-    profile?.emotional_triage && Object.keys(normalizeTriage(profile.emotional_triage)).length > 0;
+  const badgeLabel = goalBadge || "Objetivo não definido";
 
   return (
-    <div style={{ display: "grid", gap: 16 }}>
-      <Card>
-        <p style={{ marginTop: 0, opacity: 0.75 }}>
-          Bem-vindo{profile?.full_name ? `, ${profile.full_name.split(" ")[0]}` : ""}. Escolha por onde
-          começar.
-        </p>
-      </Card>
-
-      <Card>
-        <h3 style={{ marginTop: 0, color: "#2e7d32" }}>Recomendado para você</h3>
-        <p style={{ marginTop: 6, opacity: 0.75 }}>
-          {profile?.main_goal ? (
-            <>
-              Objetivo principal: <b>{profile.main_goal}</b>
-            </>
-          ) : (
-            <>Defina um objetivo para personalizar sua jornada.</>
-          )}
-        </p>
-
-        <div style={{ display: "grid", gap: 10, marginTop: 12 }}>
-          {!profile?.main_goal ? (
-            <button
-              type="button"
-              className={`${PRIMARY_BUTTON_CLASS} w-full text-left`}
-              onClick={() => nav("/app/objetivos")}
+    <div
+      style={{
+        display: "grid",
+        gap: 24,
+        paddingBottom: 32,
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "flex-start",
+          gap: 12,
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: 4,
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+            }}
+          >
+            <img
+              src={GAIA_ICON}
+              alt="Gaia Plant"
+              style={{ width: 32, height: 32, objectFit: "contain" }}
+            />
+            <span
+              style={{
+                fontWeight: 900,
+                fontSize: 18,
+                color: "#0f172a",
+                letterSpacing: 0.2,
+              }}
             >
-              Definir objetivo
-            </button>
-          ) : null}
-
-          {!hasHealth ? (
-            <button
-              type="button"
-              className={`${PRIMARY_BUTTON_CLASS} w-full text-left`}
-              onClick={() => nav("/app/saude")}
-            >
-              Responder triagem de saúde
-            </button>
-          ) : null}
-
-          {hasHealth && !hasEmotional ? (
-            <button
-              type="button"
-              className={`${PRIMARY_BUTTON_CLASS} w-full text-left`}
-              onClick={() => nav("/app/emocional")}
-            >
-              Responder triagem emocional
-            </button>
-          ) : null}
-
-          {hasHealth && hasEmotional ? (
-            <div style={{ opacity: 0.75, fontSize: 14 }}>
-              ✅ Triagens preenchidas. Você pode atualizar quando quiser.
-            </div>
-          ) : null}
+              Gaia Plant
+            </span>
+          </div>
+          <p
+            style={{
+              margin: 0,
+              fontSize: 12,
+              color: "#475467",
+              letterSpacing: "0.2px",
+            }}
+          >
+            Cuidados clínicos com toque humano.
+          </p>
         </div>
-      </Card>
 
-      <Card>
-        <div style={{ display: "grid", gap: 12 }}>
+        <div
+          style={{
+            display: "flex",
+            gap: 8,
+          }}
+        >
+          <button
+            type="button"
+            className="gaia-btn gaia-btn-ghost"
+            style={{
+              padding: "10px 14px",
+              fontSize: 12,
+              borderRadius: 14,
+            }}
+            onClick={() => nav("/app/carrinho")}
+          >
+            Carrinho
+          </button>
+          <button
+            type="button"
+            className="gaia-btn gaia-btn-outline"
+            style={{
+              padding: "10px 14px",
+              fontSize: 12,
+              borderRadius: 14,
+            }}
+            onClick={() => nav("/sair")}
+          >
+            Sair
+          </button>
+        </div>
+      </div>
+
+      <div
+        style={{
+          borderRadius: 24,
+          padding: "24px 22px",
+          background: "linear-gradient(180deg, rgba(236,253,243,0.95), #fff)",
+          border: "1px solid rgba(22,163,74,0.25)",
+          boxShadow: "0 20px 35px rgba(15,23,42,0.12)",
+        }}
+      >
+        <p
+          style={{
+            margin: 0,
+            fontSize: 32,
+            fontWeight: 800,
+            color: "#0f172a",
+          }}
+        >
+          Olá, {greetingName}
+        </p>
+        <p
+          style={{
+            marginTop: 8,
+            fontSize: 15,
+            color: "#475467",
+          }}
+        >
+          {heroSubtext}
+        </p>
+      </div>
+
+      <div
+        style={{
+          borderRadius: 28,
+          background: "#f8fbf8",
+          padding: "24px 22px",
+          border: "1px solid rgba(22,163,74,0.35)",
+          boxShadow: "0 18px 28px rgba(22,163,74,0.14)",
+          display: "flex",
+          flexDirection: "column",
+          gap: 14,
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            gap: 10,
+            flexWrap: "wrap",
+          }}
+        >
+          <div>
+            <p
+              style={{
+                margin: 0,
+                fontSize: 12,
+                letterSpacing: "0.18em",
+                textTransform: "uppercase",
+                color: "#166534",
+              }}
+            >
+              Recomendado para você
+            </p>
+            <span
+              style={{
+                marginTop: 6,
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 8,
+              }}
+            >
+              <span
+                style={{
+                  borderRadius: 999,
+                  padding: "4px 14px",
+                  fontWeight: 700,
+                  fontSize: 13,
+                  background: goalBadge ? "#0f172a" : "#e2e8f0",
+                  color: goalBadge ? "#fff" : "#0f172a",
+                }}
+              >
+                {badgeLabel}
+              </span>
+            </span>
+          </div>
+          <p
+            style={{
+              margin: 0,
+              fontSize: 12,
+              color: "#475467",
+            }}
+          >
+            {goalBadge
+              ? "Personalizamos sua jornada para este foco."
+              : "Atualize suas metas no perfil para reforçar esse card."}
+          </p>
+        </div>
+        <p
+          style={{
+            margin: 0,
+            color: "#1e293b",
+            lineHeight: 1.6,
+          }}
+        >
+          {goalBadge
+            ? `Seu plano Gaia se ajusta a ${goalBadge.toLowerCase()}, equilibrando rotina, suporte e foco clínico.`
+            : "Sem objetivo registrado, o plano continua genérico. Defina o foco principal no perfil para receber recomendações mais precisas."}
+        </p>
+        {mainAction ? (
+          <button
+            type="button"
+            className={`${PRIMARY_BUTTON_CLASS} w-full`}
+            style={{
+              borderRadius: 18,
+              padding: "16px 0",
+              fontSize: 15,
+            }}
+            onClick={() => nav(mainAction.path)}
+          >
+            {mainAction.label}
+          </button>
+        ) : (
+          <div
+            style={{
+              marginTop: 6,
+              textAlign: "center",
+              color: "#475467",
+              fontSize: 14,
+              fontWeight: 600,
+            }}
+          >
+            Triagens concluídas. Continue acompanhando sua jornada.
+          </div>
+        )}
+      </div>
+
+      <section
+        style={{
+          display: "grid",
+          gap: 16,
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "baseline",
+          }}
+        >
+          <p
+            style={{
+              margin: 0,
+              fontSize: 16,
+              fontWeight: 700,
+              color: "#0f172a",
+            }}
+          >
+            Ações principais
+          </p>
+          <span
+            style={{
+              fontSize: 12,
+              color: "#475467",
+            }}
+          >
+            Escolha com tranquilidade
+          </span>
+        </div>
+        <div
+          style={{
+            display: "grid",
+            gap: 12,
+          }}
+        >
           {cards.map((c) => (
             <button
               key={c.to}
               type="button"
-              className="gp-card-link"
               onClick={() => nav(c.to)}
-              style={cardButtonStyle}
+              style={actionCardStyle}
             >
-              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                <div style={{ fontSize: 44, lineHeight: "44px" }}>{c.emoji}</div>
-                <div>
-                  <div style={{ fontWeight: 900, fontSize: 18 }}>{c.title}</div>
-                  <div style={{ marginTop: 6, opacity: 0.75 }}>{c.desc}</div>
+              <div
+                style={{
+                  fontSize: 40,
+                  lineHeight: "40px",
+                }}
+              >
+                {c.emoji}
+              </div>
+              <div>
+                <div
+                  style={{
+                    fontSize: 18,
+                    fontWeight: 800,
+                    color: "#0f172a",
+                  }}
+                >
+                  {c.title}
                 </div>
+                <p
+                  style={{
+                    margin: "6px 0 0",
+                    color: "#475467",
+                    fontSize: 14,
+                    lineHeight: 1.4,
+                  }}
+                >
+                  {c.desc}
+                </p>
               </div>
             </button>
           ))}
         </div>
-      </Card>
+      </section>
 
-      <Card>
-        <h3 style={{ marginTop: 0 }}>Acesso rápido</h3>
-        <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
+      <section
+        style={{
+          borderRadius: 24,
+          padding: "18px 16px",
+          background: "#fff",
+          border: "1px solid rgba(15,23,42,0.08)",
+          boxShadow: "0 12px 20px rgba(15,23,42,0.08)",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: 12,
+          }}
+        >
+          <p
+            style={{
+              margin: 0,
+              fontWeight: 700,
+              color: "#0f172a",
+            }}
+          >
+            Acesso rápido
+          </p>
+          <span
+            style={{
+              fontSize: 12,
+              color: "#475467",
+            }}
+          >
+            Toque e explore
+          </span>
+        </div>
+        <div
+          style={{
+            display: "grid",
+            gap: 10,
+            gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))",
+          }}
+        >
           {quickLinks.map((q) => (
             <button
               key={q.to}
               type="button"
-              className="gp-card-link"
               onClick={() => nav(q.to)}
               style={{
-                width: 100,
-                height: 100,
-                borderRadius: 999,
-                border: "2px solid #7fb069",
-                background: "#fff",
+                borderRadius: 18,
+                border: "1px solid rgba(15,23,42,0.08)",
+                background: "#f9fafb",
+                padding: "14px 12px",
+                cursor: "pointer",
                 display: "flex",
                 flexDirection: "column",
                 alignItems: "center",
                 justifyContent: "center",
-                gap: 4,
-                cursor: "pointer",
-                boxShadow: "0 6px 16px rgba(127, 176, 105, 0.18)",
-                color: "#2f5d36",
+                gap: 6,
+                minHeight: 110,
+                boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.6)",
               }}
             >
-              <div style={{ fontSize: 28, lineHeight: "28px" }}>{q.emoji}</div>
-              <div style={{ fontWeight: 700, fontSize: 11, textAlign: "center" }}>{q.title}</div>
+              <span style={{ fontSize: 28, lineHeight: "28px" }}>{q.emoji}</span>
+              <span
+                style={{
+                  fontWeight: 700,
+                  fontSize: 13,
+                  color: "#111927",
+                  textAlign: "center",
+                }}
+              >
+                {q.title}
+              </span>
             </button>
           ))}
         </div>
-      </Card>
+      </section>
 
-      <Card>
-        <div style={{ textAlign: "center" }}>
-          <button
-            type="button"
-            onClick={() => {
-              setWhatsappActive(true);
-              window.open(`https://wa.me/5531995298192?text=${whatsappMessage}`, "_blank", "noopener");
-            }}
-            style={{
-              borderRadius: 999,
-              border: "2px solid #7fb069",
-              padding: "14px 36px",
-              fontWeight: 700,
-              fontSize: 16,
-              cursor: "pointer",
-              background: whatsappActive ? "#43a047" : "#fff",
-              color: whatsappActive ? "#fff" : "#2f5d36",
-              boxShadow: whatsappActive
-                ? "0 6px 12px rgba(67, 160, 71, 0.2)"
-                : "0 6px 16px rgba(127, 176, 105, 0.15)",
-              transition: "background 200ms, color 200ms",
-            }}
-          >
-            Fale com especialista
-          </button>
-        </div>
-      </Card>
+      <section
+        style={{
+          borderRadius: 28,
+          padding: "22px",
+          background: "linear-gradient(135deg, #0f172a, #16432f)",
+          color: "#fff",
+          boxShadow: "0 24px 40px rgba(5,9,15,0.35)",
+        }}
+      >
+        <p
+          style={{
+            margin: 0,
+            fontSize: 14,
+            lineHeight: 1.6,
+            opacity: 0.9,
+          }}
+        >
+          Precisa conversar com um especialista? A equipe Gaia está pronta para acompanhar você com calma e confiança.
+        </p>
+        <button
+          type="button"
+          onClick={handleWhatsApp}
+          style={{
+            marginTop: 18,
+            width: "100%",
+            border: "none",
+            borderRadius: 18,
+            padding: "16px 0",
+            fontWeight: 800,
+            fontSize: 15,
+            background: whatsappActive ? "#4ade80" : "#fff",
+            color: whatsappActive ? "#0f172a" : "#0b172a",
+            boxShadow: "0 12px 22px rgba(0,0,0,0.25)",
+            cursor: "pointer",
+            transition: "background 200ms ease, color 200ms ease",
+          }}
+        >
+          Fale com especialista
+        </button>
+      </section>
     </div>
   );
 }
