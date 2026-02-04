@@ -127,31 +127,103 @@ function EmailConfirmado() {
 }
 function Welcome() {
   return (
-    <div style={{ maxWidth: 360, margin: "0 auto", textAlign: "center", padding: "20px 16px" }}>
-      <Card>
-        <div style={{ textAlign: "center" }}>
-          <img src={GAIA_ICON} alt="Gaia Plant" style={{ width: 220, height: "auto", marginBottom: 10 }} />
-          <p style={{ opacity: 0.75, marginTop: 8 }}>
-            Faça login ou crie uma conta para continuar.
+    <div
+      className="gaia-gradient-shell"
+      style={{
+        minHeight: "100vh",
+        padding: "48px 16px 56px",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      <div
+        style={{
+          width: "100%",
+          maxWidth: 440,
+          display: "grid",
+          gap: 18,
+        }}
+      >
+        <div
+          className="gaia-gradient-panel"
+          style={{
+            borderRadius: 32,
+            padding: "34px 28px",
+            display: "flex",
+            flexDirection: "column",
+            gap: 10,
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+            }}
+          >
+            <img src={GAIA_ICON} alt="Gaia Plant" style={{ width: 38, height: 38, objectFit: "contain" }} />
+            <span style={{ fontWeight: 900, fontSize: 20, letterSpacing: "0.3px" }}>Gaia Plant</span>
+          </div>
+          <p
+            style={{
+              margin: 0,
+              fontSize: 16,
+              lineHeight: 1.5,
+              fontWeight: 500,
+            }}
+          >
+            A Gaia Plant é um app de acompanhamento em cannabis medicinal, focado em bem-estar, orientação responsável e cuidado contínuo.
+          </p>
+          <p
+            style={{
+              margin: 0,
+              fontSize: 14,
+              lineHeight: 1.5,
+              color: "rgba(255,255,255,0.92)",
+            }}
+          >
+            Aqui você encontra uma linguagem calma, científica e humana para reduzir dúvidas e construir confiança clínica antes mesmo de entrar.
           </p>
         </div>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: 10, alignItems: "center", marginTop: 14 }}>
-          <Link to="/login" className="gaia-btn gaia-btn-primary gaia-btn-block">
-            Já tenho conta
-          </Link>
-          <Link
-            to="/criar-conta"
-            className="gaia-btn gaia-btn-outline gaia-btn-block"
-            style={{ color: "#111" }}
+        <Card
+          style={{
+            borderRadius: 28,
+            padding: "22px 20px",
+            boxShadow: "0 26px 60px rgba(15,23,42,0.25)",
+            background: "#fff",
+          }}
+        >
+          <div
+            style={{
+              display: "grid",
+              gap: 12,
+            }}
           >
-            Criar conta
-          </Link>
-          <Link to="/conteudos" className="gaia-btn gaia-btn-mist gaia-btn-block">
-            Entenda mais antes de se cadastrar
-          </Link>
-        </div>
-      </Card>
+            <Link to="/login" className="gaia-btn gaia-btn-primary gaia-btn-block">
+              Entrar
+            </Link>
+            <Link to="/criar-conta" className="gaia-btn gaia-btn-outline gaia-btn-block">
+              Criar conta
+            </Link>
+            <Link to="/conteudos" className="gaia-btn gaia-btn-mist gaia-btn-block">
+              Entenda mais antes de se cadastrar
+            </Link>
+          </div>
+          <p
+            style={{
+              marginTop: 16,
+              marginBottom: 0,
+              fontSize: 12,
+              color: "#475467",
+              textAlign: "center",
+            }}
+          >
+            Escolha o caminho que for mais confortável para você. A Gaia estará pronta para cuidar com calma e clareza.
+          </p>
+        </Card>
+      </div>
     </div>
   );
 }

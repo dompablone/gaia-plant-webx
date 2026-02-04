@@ -478,29 +478,41 @@ export default function AppDashboard({ profile }) {
       </section>
 
       <section
+        className="gaia-gradient-panel"
         style={{
-          borderRadius: 28,
-          padding: "22px",
-          background: "linear-gradient(135deg, #0f172a, #16432f)",
-          color: "#fff",
-          boxShadow: "0 24px 40px rgba(5,9,15,0.35)",
+          padding: "24px 22px",
+          borderRadius: 32,
+          display: "flex",
+          flexDirection: "column",
+          gap: 12,
         }}
       >
+        <p
+          style={{
+            margin: 0,
+            fontSize: 16,
+            fontWeight: 700,
+            lineHeight: 1.4,
+          }}
+        >
+          Precisa conversar com um especialista?
+        </p>
         <p
           style={{
             margin: 0,
             fontSize: 14,
             lineHeight: 1.6,
             opacity: 0.9,
+            color: "rgba(255,255,255,0.92)",
           }}
         >
-          Precisa conversar com um especialista? A equipe Gaia está pronta para acompanhar você com calma e confiança.
+          O mesmo tom calmo que te recebeu antes do login segue aqui para lembrar que a Gaia Plant é um cuidado médico responsável, guiado por pessoas.
         </p>
         <button
           type="button"
           onClick={handleWhatsApp}
           style={{
-            marginTop: 18,
+            marginTop: 8,
             width: "100%",
             border: "none",
             borderRadius: 18,
@@ -508,7 +520,7 @@ export default function AppDashboard({ profile }) {
             fontWeight: 800,
             fontSize: 15,
             background: whatsappActive ? "#4ade80" : "#fff",
-            color: whatsappActive ? "#0f172a" : "#0b172a",
+            color: "#0f172a",
             boxShadow: "0 12px 22px rgba(0,0,0,0.25)",
             cursor: "pointer",
             transition: "background 200ms ease, color 200ms ease",

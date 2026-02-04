@@ -33,6 +33,33 @@ hr { max-width: 100%; }
   --gaia-green-soft: rgba(22, 163, 74, 0.12);
   --gaia-border: rgba(15, 23, 42, 0.14);
   --gaia-text: #0f172a;
+  --gaia-gradient-start: #0a1110;
+  --gaia-gradient-mid: #0f2a1f;
+  --gaia-gradient-end: #194a36;
+  --gaia-gradient: linear-gradient(
+    145deg,
+    var(--gaia-gradient-start) 0%,
+    var(--gaia-gradient-mid) 58%,
+    var(--gaia-gradient-end) 100%
+  );
+  --gaia-gradient-soft: linear-gradient(
+    180deg,
+    rgba(10, 17, 14, 0.95) 0%,
+    rgba(14, 35, 23, 0.9) 65%,
+    rgba(22, 71, 41, 0.82) 100%
+  );
+}
+
+.gaia-gradient-shell {
+  background: var(--gaia-gradient-soft);
+}
+
+.gaia-gradient-panel {
+  background: var(--gaia-gradient);
+  color: #fff;
+  border-radius: 28px;
+  box-shadow: 0 20px 46px rgba(5, 7, 12, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.15);
 }
 
 .gaia-input {
