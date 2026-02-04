@@ -329,57 +329,135 @@ function Login() {
   }
 
   return (
-    <div style={styles.authPage}>
-      <div style={styles.authCard}>
-        <div style={{ textAlign: "center", marginBottom: 12 }}>
-          <img src={GAIA_ICON} alt="Gaia Plant" style={{ width: 240, height: 240 }} />
-          <h2 style={styles.authTitle}>Login</h2>
-          <p style={styles.authSubtitle}>Acesse sua conta para continuar.</p>
-        </div>
-
-        <form onSubmit={handleLogin} style={{ width: "100%", maxWidth: 320, margin: "0 auto" }}>
-          <Field label="E-mail">
-            <Input value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" />
-          </Field>
-          <Field label="Senha">
-            <Input type="password" value={pass} onChange={(e) => setPass(e.target.value)} autoComplete="current-password" />
-          </Field>
-
-          <button disabled={loading} className={`${PRIMARY_BUTTON_CLASS} w-full`}>
-            {loading ? "Entrando..." : "Entrar"}
-          </button>
-          <button
-            type="button"
-            disabled={recoverLoading}
-            onClick={handleForgotPassword}
-            className={`${GHOST_BUTTON_CLASS} mt-2 w-full text-sm`}
+    <div
+      className="gaia-gradient-shell"
+      style={{
+        minHeight: "100vh",
+        padding: "32px 16px",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      <div style={{ width: "100%", maxWidth: 440 }}>
+        <div
+          style={{
+            ...styles.authCard,
+            borderRadius: 28,
+            padding: "32px 30px",
+            boxShadow: "0 28px 60px rgba(8, 17, 10, 0.35)",
+            border: "1px solid rgba(255,255,255,0.18)",
+            minHeight: "auto",
+          }}
+        >
+          <div
+            style={{
+              textAlign: "center",
+              marginBottom: 22,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: 6,
+            }}
           >
-            {recoverLoading ? "Enviando..." : "Esqueci minha senha"}
-          </button>
-          {recoverMsg ? (
-            <p
+            <img src={GAIA_ICON} alt="Gaia Plant" style={{ width: 48, height: 48, objectFit: "contain" }} />
+            <h2
               style={{
-                marginTop: 8,
-                color: recoverMsg.startsWith("Erro") ? "#b00020" : "#2e7d32",
-                fontSize: 13,
+                margin: 0,
+                fontSize: 26,
+                letterSpacing: "0.6px",
+                fontWeight: 800,
+                color: "#0f172a",
               }}
             >
-              {recoverMsg}
+              Login
+            </h2>
+            <p
+              style={{
+                margin: 0,
+                fontSize: 14,
+                color: "#475467",
+                maxWidth: 320,
+                lineHeight: 1.6,
+              }}
+            >
+              Conecte-se ao seu acompanhamento de saúde. A Gaia Plant garante uma experiência calma e confiável desde o primeiro toque.
             </p>
-          ) : null}
-
-          <Link to="/conteudos" className="gaia-btn gaia-btn-ghost gaia-btn-block mt-2">
-            Entenda mais antes de se cadastrar
-          </Link>
-
-          <div style={{ marginTop: 12 }}>
-            <Link to="/criar-conta" style={{ color: "#2f5d36", fontWeight: 700, textDecoration: "none" }}>
-              Não tenho conta
-            </Link>
           </div>
 
-          {msg ? <p style={{ marginTop: 12, color: "#b00020" }}>{msg}</p> : null}
-        </form>
+          <form
+            onSubmit={handleLogin}
+            style={{
+              display: "grid",
+              gap: 16,
+            }}
+          >
+            <Field label="E-mail">
+              <Input value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" />
+            </Field>
+            <Field label="Senha">
+              <Input type="password" value={pass} onChange={(e) => setPass(e.target.value)} autoComplete="current-password" />
+            </Field>
+
+            <button
+              disabled={loading}
+              className={`${PRIMARY_BUTTON_CLASS} w-full`}
+              style={{ padding: "16px 0", fontSize: 16, borderRadius: 20 }}
+            >
+              {loading ? "Entrando..." : "Entrar"}
+            </button>
+
+            <button
+              type="button"
+              disabled={recoverLoading}
+              onClick={handleForgotPassword}
+              className={`${GHOST_BUTTON_CLASS} w-full`}
+              style={{
+                padding: "14px 0",
+                borderRadius: 20,
+                fontSize: 14,
+                borderColor: "rgba(15,23,42,0.18)",
+              }}
+            >
+              {recoverLoading ? "Enviando..." : "Esqueci minha senha"}
+            </button>
+
+            {recoverMsg ? (
+              <p
+                style={{
+                  marginTop: 0,
+                  color: recoverMsg.startsWith("Erro") ? "#b00020" : "#2e7d32",
+                  fontSize: 13,
+                }}
+              >
+                {recoverMsg}
+              </p>
+            ) : null}
+
+            <Link
+              to="/conteudos"
+              className="gaia-btn gaia-btn-outline gaia-btn-block"
+              style={{ padding: "14px 0", borderRadius: 20 }}
+            >
+              Entenda mais antes de se cadastrar
+            </Link>
+
+            <div
+              style={{
+                textAlign: "center",
+                fontSize: 13,
+                color: "#475467",
+                marginTop: 4,
+              }}
+            >
+              <Link to="/criar-conta" style={{ color: "#2f5d36", fontWeight: 700, textDecoration: "none" }}>
+                Não tenho conta
+              </Link>
+            </div>
+
+            {msg ? <p style={{ marginTop: 12, color: "#b00020" }}>{msg}</p> : null}
+          </form>
+        </div>
       </div>
     </div>
   );
